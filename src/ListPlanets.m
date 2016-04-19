@@ -5,7 +5,7 @@ function ListPlanets (system)
         sprintf('---------------\n')
         sprintf('x = %f\ty=%f\n',system{3,1}(i),system{4,1}(i))
         sprintf('vx = %f\tvy=%f\n',system{5,1}(i),system{6,1}(i))
-        [system{5,1}(i) system{6,1}(i)]
+        %[system{5,1}(i) system{6,1}(i)]
         if (system{7,1}(i) == 0.0)
             sprintf('Non-accreting\n')
         

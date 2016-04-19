@@ -8,11 +8,11 @@ function FillPolar1DArrays()
     logGrid = input(prompt,'s');
     deltatheta = (RMAX-RMIN)/NRAD;
     if (strcmp(logGrid,'YES')) 
-        Radii = RMIN*exp([0:NRAD]./NRAD*log(RMAX/RMIN));
+        Radii = RMIN*exp((0:NRAD)./NRAD*log(RMAX/RMIN));
         sprintf('%.18g ',Radii);
 
     elseif (strcmp(logGrid,'NO'))
-        Radii = RMIN+deltatheta*[0:NRAD]; 
+        Radii = RMIN+deltatheta*(0:NRAD); 
         %format long
         %Radii'
         %sprintf('%.18g ', Radii)

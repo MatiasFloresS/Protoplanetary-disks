@@ -1,6 +1,8 @@
 function p = GetsPsysInfo(system, action)
     global G GuidingCenter;
 
+    Xplanet = 0;
+    Yplanet = 0;
     x = system{3,1}(1);
     xc = x;
     y = system{4,1}(1);
@@ -28,7 +30,6 @@ function p = GetsPsysInfo(system, action)
         E = PI *(1.-arg/abs(arg))/2.;
     else
         E = acos((1.0-d/a)/e);
-    
     end
     
     
@@ -70,14 +71,11 @@ function p = GetsPsysInfo(system, action)
             cross = Xplanet*y-x*Yplanet;
             Xplanet = x;
             Yplanet = y;
-            p = asin(cross/(d1*d2));
-            
+            p = asin(cross/(d1*d2));    
  
         case 2
             p = omega;
-    end
-    
-       
+    end  
 end
 
    	

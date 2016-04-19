@@ -1,24 +1,20 @@
 function main()
-    global force system filename SigmaMed;
-    global SIGMASLOPE SIGMA0 ASPECTRATIO;
-    global R MU FLARINGINDEX NRAD NSEC;
-    global EnergyMed GuidingCenter;
+    global force system filename SigmaMed SIGMASLOPE SIGMA0 ASPECTRATIO;
+    global R MU FLARINGINDEX NRAD NSEC EnergyMed GuidingCenter;
     global PhysicalTime LAMBDADOUBLING TRANSITIONRADIUS TRANSITIONRATIO;
-    global TRANSITIONWIDTH;
+    global TRANSITIONWIDTH PhysicalTimeInitial ADIABATICINDEX;
     
+    ADIABATICINDEX = 1.4;
     TRANSITIONRADIUS = 0.0;
     TRANSITIONRATIO = 1.0;
     TRANSITIONWIDTH = 1.0;
     LAMBDADOUBLING = 0.0;
-    
-     var("CAVITYRADIUS", &CAVITYRADIUS, REAL, NO, "0.0");
-  var("CAVITYRATIO", &CAVITYRATIO, REAL, NO, "1.0");
-  var("CAVITYWIDTH", &CAVITYWIDTH, REAL, NO, "1.0");
+    PhysicalTimeInitial = 0.0;
     PhysicalTime =0.0;
     FREQUENCY = 2;
     OMEGAFRAME = 1.0;
     Corotating = 1;
-    GUIDINGCENTER = 1; % YES
+    GuidingCenter = 1; % YES
     
     R = 1.0; % Mean molecular weight
     MU = 1.0; % Universal Gas Constant in code units 
@@ -39,7 +35,6 @@ function main()
     gas_energy      = zeros([NRAD,NSEC]);
     gas_label       = zeros([NRAD,NSEC]); 
     
-    
     dimfxy = 11;
     FillPolar1DArrays();
     AllocateForce(dimfxy);
@@ -49,12 +44,16 @@ function main()
     
     % InitGasDensity
     FillSigma();
-    gas_density = SigmaMed(1:NRAD);
+    for j=1:NSEC
+        gas_density(:,j) = SigmaMed;
+    end
     
     if (adiabatic)
         % InitGasEnergy
         FillEnergy();
-        energy = EnergyMed(1:NRAD);
+        for j=1:NSEC
+            gas_energy(:,j) = EnergyMed;
+        end
     end
     
     if (selfgravity)
@@ -64,7 +63,7 @@ function main()
         % azimutal velocities are not updated 
     end
     
-    system;
+    %system;
     %ListPlanets(system);
     
     OmegaFrame = OMEGAFRAME;

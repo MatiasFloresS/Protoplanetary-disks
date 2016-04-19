@@ -1,15 +1,15 @@
-function Initialization(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label, pla_sys)
+function Initialization(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label, gas_label2, system)
 
     %ReadPrevDim() Esta funcion leera dims.dat y used_rad.dat, mas adelante
     %se vera eso
     
     InitEuler(gas_v_rad, gas_v_theta, gas_density, gas_energy);
-    
+    InitLabel(gas_label,gas_label2, system);
     
 end
 
-function z = InitEuler(Vr, Vt, Rho, Energy)
-    global NRAD NSEC Rmed CellAbscissa CellOrdenate;
+function z = InitEuler(Vr, Vt, gas_density, gas_energy)
+    global NRAD NSEC;
     %InitTransport()
     RadMomP         = zeros([NRAD,NSEC]);
     RadMomM         = zeros([NRAD,NSEC]);
@@ -47,9 +47,13 @@ function z = InitEuler(Vr, Vt, Rho, Energy)
     SoundSpeed   = zeros([NRAD,NSEC]);
     Temperature  = zeros([NRAD,NSEC]);
     Qplus        = zeros([NRAD,NSEC]);
+    gas_label2   = zeros([NRAD,NSEC]);
     
     InitComputeAccel();
-    ComputeSoundSpeed(Rho, Energy, SoundSpeed);
+    ComputeSoundSpeed(gas_density, gas_energy);
+    ComputePressureField(gas_density, gas_energy);
+    ComputeTemperatureField(gas_density, gas_energy);
+    %InitGasVelocities (Vr, Vt)
     z=0;
     
 end
@@ -61,28 +65,33 @@ function InitComputeAccel()
     CellAbscissa = zeros([NRAD,NSEC]);
     CellOrdinate = zeros([NRAD,NSEC]);
     
-    
     for i=1:NRAD
+        CellAbscissa(i,:) = Rmed(i).* cos(2.0*pi*(0:NSEC-1)/NSEC);
+        CellOrdinate(i,:) = Rmed(i).* sin(2.0*pi*(0:NSEC-1)/NSEC);
+    end
+    
+end
+
+function ComputeSoundSpeed(gas_density, gas_energy)
+
+    global Rmed FLARINGINDEX G NSEC Adiabatic SoundSpeed ADIABATICINDEX;
+    
+    if (~Adiabatic)
         for j=1:NSEC
-            CellAbscissa(i,j) = Rmed(i).* cos(2.0*pi*(j)/NSEC);
-            CellOrdinate(i,j) = Rmed(i).* sin(2.0*pi*(j)/NSEC);
+            SoundSpeed(:,j) = AspectRatio(Rmed).*sqrt(G*1.0./Rmed).*Rmed.^FLARINGINDEX;
         end
+    
+    else
+       SoundSpeed = sqrt(ADIABATICINDEX*(ADIABATICINDEX-1.0).*gas_energy./gas_density);
     end
 end
 
-function ComputeSoundSpeed(Rho, Energy, SoundSpeed)
-
-    global Rmed;
-    aspectratio = AspectRatio(Rmed);
-
-end
-
-
 function aspectratio = AspectRatio(rad)
 
-    global ASPECTRATIO PhysicalTime;
-    aspectratio = ASPECTRATIO;
+    global ASPECTRATIO PhysicalTime TRANSITIONRADIUS TRANSITIONWIDTH TRANSITIONRATIO;
+    global LAMBDADOUBLING PhysicalTimeInitial;
     
+    aspectratio = ASPECTRATIO;
     rmin = TRANSITIONRADIUS-TRANSITIONWIDTH*ASPECTRATIO;
     rmax = TRANSITIONRADIUS+TRANSITIONWIDTH*ASPECTRATIO;
     scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
@@ -93,8 +102,74 @@ function aspectratio = AspectRatio(rad)
         aspectratio = aspectratio * TRANSITIONRATIO;
     end
     
-    if ((rad >= rmin) && (rad <= rmax))
-        aspectratio = aspecrtatio *exp((rmax-rad)/(rmax-rmin)*log(TRANSITIONRATIO));
+    if (rad >= rmin & rad <= rmax)
+        aspectratio = aspectratio *exp((rmax-rad)/(rmax-rmin)*log(TRANSITIONRATIO));
+    end  
+end
+
+function ComputePressureField(gas_density, gas_energy)
+    global ADIABATICINDEX Adiabatic SoundSpeed Pressure;
+    
+    if (~Adiabatic)
+        Pressure = gas_density.*SoundSpeed.*SoundSpeed;
+    else
+        Pressure = (ADIABATICINDEX-1.0).*gas_energy;
+    end
+end
+
+function ComputeTemperatureField(gas_density, gas_energy)
+    
+    global Temperature Adiabatic MU R ADIABATICINDEX Pressure;
+    if (~Adiabatic)
+        Temperature = MU/R.*Pressure./gas_density;
+    else
+        Temperature = MU/R*(ADIABATICINDEX-1.0).*gas_energy./gas_density;
+    end
+end
+
+function InitLabel(gas_label, gas_label2,system)
+    global NSEC NRAD Rmed;
+    
+    xp = system{3,1}(1);
+    yp = system{4,1}(1);
+    rp = sqrt(xp*xp + yp*yp);
+    rhill = rp * (system{2,1}(1)/3)^(1./3.);
+    
+    % Initialize label as you wish. In this example, label only takes
+    % into account fluid elements inside the planet's Hill Sphere
+    
+    for i=1:NRAD
+        x(i,:) = Rmed(i).* cos((0:NSEC-1)/2.0*pi*NSEC);
+        y(i,:) = Rmed(i).* sin((0:NSEC-1)/2.0*pi*NSEC);
+        
     end
     
+    distance = sqrt((x-xp).*(x-xp) + (y-yp).*(y-yp));
+    
+    for i=1:NRAD
+        
+            if (distance(i, :) < rhill)
+                gas_label(i,:) = 1.0;
+            else
+                gas_label(i,:) = 0.0;
+            end
+        
+    end
+    
+    for i=1:NRAD
+        for j=1:NSEC
+            if (distance(i,j) < rhill)
+                gas_label2(i,j) = 1.0;
+            else
+                gas_label2(i,j) = 0.0;
+            end
+        end
+    end
+    
+    
+    a = gas_label(1:NRAD, 1:NSEC) - gas_label2(1:NRAD, 1:NSEC)
+    
+    for i=1:NRAD
+        for 
+       
 end

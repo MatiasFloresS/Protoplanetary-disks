@@ -1,9 +1,7 @@
-function y = FillSigma()
-    global Rmed Rinf SigmaMed NRAD;
-    size(Rmed);
-    SigmaMed = Sigma(Rmed(1:NRAD));
-    SigmaInf = Sigma(Rinf(1:NRAD));
-
+function FillSigma()
+    global Rmed Rinf SigmaMed SigmaInf;
+    SigmaMed= Sigma(Rmed);    
+    SigmaInf = Sigma(Rinf);
 end 
 
 function z = Sigma(r)
@@ -14,11 +12,9 @@ function z = Sigma(r)
     CAVITYRATIO = 1.0;
 
     if (r< CAVITYRADIUS)
-        cavity = 1.0/CAVITIRATIO;
+        cavity = 1.0/CAVITYRATIO;
     end
 
     z = cavity*ScalingFactor*SIGMA0*r.^(-SIGMASLOPE);
-
-    return 
 
 end
