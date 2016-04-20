@@ -15,7 +15,6 @@ function AllocateForce(dimfxy)
     % real *GlobalForce;
     %  }
 
-    cero = zeros(1,int8(4)*dimfxy);
-    size(integer)
+    cero = zeros(1,4*dimfxy);
     force{9,1}= cero;
 end

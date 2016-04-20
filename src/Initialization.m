@@ -1,10 +1,16 @@
 function Initialization(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label, system)
 
+    global RESTART;
     %ReadPrevDim() Esta funcion leera dims.dat y used_rad.dat, mas adelante
     %se vera eso
     
     InitEuler(gas_v_rad, gas_v_theta, gas_density, gas_energy);
     InitLabel(gas_label, system);
+    
+    if (RESTART == 1)
+       % checkrebin and others functions 
+    end
+    WriteDim();
     
 end
 
@@ -155,4 +161,20 @@ function InitLabel(gas_label,system)
     end
     
     gas_label;
+end
+
+function WriteDim()
+
+
+  %char filename[200];
+  %FILE 	*dim;
+  %if (!CPU_Master) return;
+  %sprintf (filename, "%sdims.dat", OUTPUTDIR);
+  %if ((dim = fopen (filename, "w")) == NULL) {
+  %  fprintf (stderr, "Unable to open %s. Program stopped\n", filename);
+  %  prs_exit (1);
+  %}
+  %fprintf (dim,"%d\t%d\t\t%d\t%d\t%f\t%d\t%d\t%d\n",0,0,0,0,RMAX, NTOT/NINTERM, GLOBALNRAD, NSEC);
+  %fclose (dim);
+%}
 end

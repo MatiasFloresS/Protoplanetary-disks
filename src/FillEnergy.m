@@ -4,7 +4,6 @@ function FillEnergy()
     EnergyMed = Energy(Rmed);
 end
 
-
 function w = Energy(r)
     global SIGMASLOPE ASPECTRATIO R MU SIGMA0 FLARINGINDEX ADIABATICINDEX;
     double energy0;

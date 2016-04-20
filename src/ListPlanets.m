@@ -1,5 +1,4 @@
 function ListPlanets (system)
-    
     for i=1:system{1}
         sprintf('Planet number %d\n', i)
         sprintf('---------------\n')
