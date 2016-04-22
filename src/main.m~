@@ -1,31 +1,18 @@
 function main(ParameterFile)
-    global force system filename SigmaMed SIGMASLOPE SIGMA0 ASPECTRATIO;
-    global R MU FLARINGINDEX NRAD NSEC EnergyMed GuidingCenter;
-    global PhysicalTime PhysicalTimeInitial RESTART;
+    global force system  SigmaMed R MU  NRAD NSEC EnergyMed GuidingCenter;
+    global PLANETCONFIG PhysicalTime PhysicalTimeInitial RESTART;
     
     ReadVariables(ParameterFile);
-    return
     
     RESTART = 0;
     PhysicalTimeInitial = 0.0;
     PhysicalTime =0.0;
     FREQUENCY = 2;
-    OMEGAFRAME = 1.0;
     Corotating = 1;
     GuidingCenter = 1; % YES
     
     R = 1.0; % Mean molecular weight
     MU = 1.0; % Universal Gas Constant in code units 
-    ASPECTRATIO = 0.05;
-    SIGMASLOPE = 0.0;
-    SIGMA0 = 6.3661977237e-4;
-    FLARINGINDEX = 0.0;
-  
-    filename = '/in/Jup.cfg';
-    NRAD = 128;
-    NSEC= 384;
-    adiabatic = true;
-    selfgravity = false;
     
     gas_density     = zeros([NRAD,NSEC]);
     gas_v_rad       = zeros([NRAD,NSEC]);
@@ -37,7 +24,7 @@ function main(ParameterFile)
     FillPolar1DArrays();
     AllocateForce(dimfxy);
 
-    planets = InitPlanetarySystem(filename);
+    planets = InitPlanetarySystem(PLANETCONFIG);
     sprintf('%d\n',planets);
     
     % InitGasDensity
@@ -46,7 +33,7 @@ function main(ParameterFile)
         gas_density(:,j) = SigmaMed;
     end
     
-    if (adiabatic)
+    if (ADIABATIC)
         % InitGasEnergy
         FillEnergy();
         for j=1:NSEC
@@ -54,7 +41,7 @@ function main(ParameterFile)
         end
     end
     
-    if (selfgravity)
+    if (SELFGRAVITY)
         % If SelfGravity = YES or Z, planets are initialized feeling disk
         % potential. Only the surface density is required to calculate
         % the radial self-gravity acceleration. The disk radial and
@@ -103,6 +90,7 @@ function ReadVariables(ParameterFile)
                 if (~strcmp(a, ''))
                     if (~strcmp(a(1),'#'))
                         b = fscanf(fid, '%s', 1);
+                        
                         A{c,1} = a;
                         A{c,2} = b;
                         c = c + 1;
@@ -131,20 +119,6 @@ function InitVariables(A)
     global LAMBDADOUBLING SELFGRAVITY CICPLANET FORCEDCIRCULAR ZMPLUS ADIABATIC;
     global ADIABATICINDEX COOLING COOLINGTIME0;
     
-    B = {'DT', 'SIGMA0', 'NINTERM', 'NTOT', 'OUTPUTDIR', 'INNERBOUNDARY', 'LABELADVECTION','TRANSPORT','PLANETCONFIG', ...
-        'MASSTAPER, RADIALSPACING, NRAD, NSEC, RMIN, RMAX, THICKNESSSMOTHING, ROCHESMOOTHING, ASPECTRATIO,...
-        'VISCOSITY', 'ALPHAVISCOSITY', 'SIGMASLOPE', 'RELEASERADIUS', 'RELEASEDATE', 'OMEGAFRAME', 'DISK', 'FRAME',...
-        'OUTERSOURCEMASS', 'WRITEDENSITY', 'WRITEVELOCITY', 'WRITEENERGY', 'WRITETEMPERATURE', 'WRITEDIVV', 'WRITEQPLUS',...
-        'INDIRECTTERM', 'EXCLUDEHILL', 'IMPOSEDDISKDRIFT', 'FLARINGINDEX', 'ECCENTRICITY', 'CAVITYRADIUS', 'CAVITYRATIO',...
-        'CAVITYWIDTH', 'TRANSITIONRADIUS', 'TRANSITIONRATIO', 'TRANSITIONWIDTH', 'LAMBDADOUBLING', 'SELFGRAVITY', 'CICPLANET,...
-        'FORCEDCIRCULAR', 'ZMPLUS, ADIABATIC, ADIABATICINDEX, COOLING, COOLINGTIME0};
-    
-    sprintf('hola\n')
-    size(B)
-    for i=1:size(B)
-        B(i)
-    end
-        
     DT = 1.0;     
     SIGMA0 = 173.0;
     NINTERM = 10.0;
@@ -198,5 +172,10 @@ function InitVariables(A)
     ADIABATICINDEX = 1.4;
     COOLING = 'NO';
     COOLINGTIME0 = 6.28;
- 
+    
+    for i=1:size(A)
+        varname = upper(genvarname(A{i,1}));
+        eval([varname '= A{i,2}']);
+    end
+    
 end

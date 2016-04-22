@@ -1,21 +1,22 @@
-function cant_planets = InitPlanetarySystem(filename)
-    global system;
-    sprintf(filename);
-    cant_planets = FindNumberOfPlanets(filename);
+function cant_planets = InitPlanetarySystem()
+    global system ;
+    cant_planets = FindNumberOfPlanets();
     sprintf ('%d planet(s) found.\n', cant_planets);
     AllocPlanetsSystem(cant_planets);
     system{1} = cant_planets;
-    information_planets(filename,cant_planets);
+    information_planets(cant_planets);
     return
 end
 
-function cant_planets = FindNumberOfPlanets(filename)
-    sprintf('%s',filename);
+function cant_planets = FindNumberOfPlanets()
+    global PLANETCONFIG;
+    sprintf('%s',PLANETCONFIG)
     num = 1;
     cant_planets = 0;
+    filename = PLANETCONFIG;
     fid = fopen(filename, 'r');
     if fid == -1
-        sprintf('Cannot open file: %s', filename)
+        sprintf('Cannot open file: %s', PLANETCONFIG)
         quit cancel
     else
         tline = fgetl(fid);
@@ -77,17 +78,16 @@ function AllocPlanetsSystem (cant_planets)
     end   
 end
 
-function information_planets(filename,cant_planets)
-    global GlobalRmed Radii system G;
+function information_planets(cant_planets)
+    global GlobalRmed Radii system G PLANETCONFIG;
     ECCENTRICITY = 0.0;
     G = 1;
-    sprintf('%s',filename);
     CICPlanet = false;
     num=0;
     num_planet=1;
-    fid = fopen(filename, 'r');
+    fid = fopen(PLANETCONFIG, 'r');
     if fid == -1
-        sprintf('Cannot open file: %s', filename)
+        sprintf('Cannot open file: %s', PLANETCONFIG)
         quit cancel
     else
         tline = fgetl(fid);
