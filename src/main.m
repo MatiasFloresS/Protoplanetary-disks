@@ -1,15 +1,17 @@
-function main(ParameterFile)
-    global force system  SigmaMed R MU  NRAD NSEC EnergyMed GuidingCenter;
-    global PhysicalTime PhysicalTimeInitial RESTART ADIABATIC SELFGRAVITY OMEGAFRAME;
+function main(ParameterFile,TellE)
+    global force system  SigmaMed R MU  NRAD NSEC EnergyMed;
+    global PhysicalTime PhysicalTimeInitial RESTART Adiabatic SELFGRAVITY OMEGAFRAME;
+    global Corotating;
     
     ReadVariables(ParameterFile);
+    if (strcmp(TellE,'YES'))
+        TellEverything();
+    end
     
     RESTART = 0;
     PhysicalTimeInitial = 0.0;
     PhysicalTime =0.0;
     FREQUENCY = 2;
-    Corotating = 1;
-    GuidingCenter = 1; % YES
     
     R = 1.0; % Mean molecular weight
     MU = 1.0; % Universal Gas Constant in code units 
@@ -33,7 +35,7 @@ function main(ParameterFile)
         gas_density(:,j) = SigmaMed;
     end
     
-    if (ADIABATIC)
+    if (Adiabatic)
         % InitGasEnergy
         FillEnergy();
         for j=1:NSEC
@@ -53,7 +55,7 @@ function main(ParameterFile)
     
     OmegaFrame = OMEGAFRAME;
     
-    if (Corotating == true) 
+    if (strcmp(Corotating,'YES'))
         OmegaFrame = GetsPsysInfo(system, FREQUENCY);
     end
     
@@ -70,6 +72,13 @@ function main(ParameterFile)
 end
 
 function ReadVariables(ParameterFile)
+    cant_inputs = 60; % Se da memoria para 60 inputs, esto se puede modificar;
+    A = cell(2,1);
+    A{1,1} = [];
+    A{2,1} = [];
+    cero = zeros(1,cant_inputs);
+    A{1,1} = cero;
+    A{2,1} = cero;
     sprintf('%s',ParameterFile);
     c = 1;
     fid = fopen(ParameterFile, 'r');
@@ -110,8 +119,8 @@ function ReadVariables(ParameterFile)
     return
 end
 
-
 function InitVariables(A)
+    % variables leidas
     global DT SIGMA0 NINTERM NTOT OUTPUTDIR INNERBOUNDARY LABELADVECTION;
     global TRANSPORT PLANETCONFIG MASSTAPER RADIALSPACING NRAD NSEC RMIN RMAX;
     global THICKNESSSMOTHING ROCHESMOOTHING ASPECTRATIO VISCOSITY ALPHAVISCOSITY;
@@ -121,6 +130,10 @@ function InitVariables(A)
     global CAVITYRATIO CAVITYWIDTH TRANSITIONRADIUS TRANSITIONRATIO TRANSITIONWIDTH;
     global LAMBDADOUBLING SELFGRAVITY CICPLANET FORCEDCIRCULAR ZMPLUS ADIABATIC;
     global ADIABATICINDEX COOLING COOLINGTIME0;
+    
+    % otras variables
+    global FastTransport OpenInner NonReflecting Evanescent LogGrid Corotating;
+    global GuidingCenter SelfGravity ZMPlus Write_Temperature Adiabatic SGZeroMode;
     
     DT = 1.0;     
     SIGMA0 = 173.0;
@@ -176,9 +189,187 @@ function InitVariables(A)
     COOLING = 'NO';
     COOLINGTIME0 = 6.28;
     
+    % other variables
+    FastTransport = 'YES';
+    GuidingCenter = 'NO';
+    NonReflecting = 'NO';
+    Corotating = 'NO';
+    Evanescent = 'NO';
+    Write_Temperature = 'NO';
+    SelfGravity = 'NO';
+    SGZeroMode = 'NO';
+    Adiabatic = 'NO';
+    
     for i=1:size(A)
         varname = upper(genvarname(A{i,1}));
         eval([varname '= A{i,2};']);
     end
     
+    
+  if (strcmp(TRANSPORT,'S'))  % falta definir que caso va acá
+      FastTransport = 'NO';
+  end
+  
+  if (strcmp(INNERBOUNDARY,'OPEN'))
+      OpenInner = 'YES';
+  end
+  
+  if (strcmp(INNERBOUNDARY,'NONREFLECTING'))
+      NonReflecting = 'YES';
+  end
+  
+  if (strcmp(INNERBOUNDARY,'EVANESCENT'))
+      Evanescent = 'YES';
+  end
+  
+  if (strcmp(RADIALSPACING,'LOGARITHM'))
+      LogGrid = 'YES';
+  end
+  
+  if(strcmp(FRAME,'CENTER'))
+      Corotating = 'YES';
+  end
+  
+  if(strcmp(FRAME,'GUIDING-CENTER'))
+      Corotating = 'YES';
+      GuidingCenter = 'YES';
+  end
+ 
+  if(strcmp(SELFGRAVITY,'Z'))
+      SelfGravity = 'YES';
+      SGZeroMode = 'YES';
+  end
+  
+  if(strcmp(ZMPLUS,'YES') && (~strcmp(SGZeroMode,'YES')))
+      sprintf('This is not very meaningfull to involve the anisotropic pressure model ');
+      sprintf('(ZMPlus=Yes) without taking into account the axisymmetric component of the ');
+      sprintf('disk self-gravity. I decided to put ZMPlus = No. Please check again!\n');
+      ZMPlus = 'NO';
+  end
+  
+  if (strcmp(ADIABATIC,'YES'))
+      Adiabatic = 'YES';
+      Write_Temperature = 'YES';
+  end
+  
+  if ((strcmp(Adiabatic,'YES')) & (ADIABATICINDEX == 1)) 
+      sprintf('You cannot have Adiabatic = YES and AdiabatcIndex = 1. I decided to put ');
+      sprintf('Adiabatic = No, to simulate a locally isothermal equation of state. Please ');
+      sprintf('check that it what you really wanted to do!\n');
+      Adiabatic = 'NO';
+  end
+      
+  if ((ALPHAVISCOSITY ~= 0.0) && (VISCOSITY ~= 0.0)) 
+      sprintf('You cannot use at the same time\n');
+      sprintf('VISCOSITY and ALPHAVISCOSITY.\n');
+      sprintf('Edit the parameter file so as to remove\n');
+      sprintf('one of these variables and run again.\n');
+      quit cancel;
+  end
+  
+  if (ALPHAVISCOSITY ~= 0.0) 
+      sprintf('Viscosity is of alpha type\n');
+  end
+  
+  if ((THICKNESSSMOOTHING ~= 0.0) && (ROCHESMOOTHING ~= 0.0)) 
+      sprintf('You cannot use at the same time\n');
+      sprintf('ThicknessSmoothing and RocheSmoothing.\n');
+      sprintf('Edit the parameter file so as to remove\n');
+      sprintf('one of these variables and run again.\n');
+      quit cancel;
+  end
+  
+  if ((THICKNESSSMOTHING <= 0.0) & (ROCHESMOOTHING <= 0.0))
+      sprintf('A non-vanishing potential smoothing length is required.\n');
+      sprintf('Please use either of the following variables:\n');
+      sprintf ('ThicknessSmoothing *or* RocheSmoothing.\n');
+      sprintf('before launching the run again.\n');
+      quit cancel;
+  end
+  
+  if (ROCHESMOOTHING ~= 0.0)
+      sprintf('Planet potencial smoothing scales with their Hill sphere.\n');
+  end
+  
+  if (~strcmp(OUTPUTDIR,'/~masset'))
+      sprintf('new output %s',OUTPUTDIR);
+  end
+  
+  %if (*(OUTPUTDIR+strlen(OUTPUTDIR)-1) != '/')
+  %  strcat (OUTPUTDIR, "/");   
 end
+
+function TellEverything()
+    global RMIN RMAX ASPECTRATIO G SIGMA0 SIGMASLOPE NRAD NSEC NINTERM DT;
+    
+    sprintf('\nDisc properties:\n')
+    sprintf('----------------\n')
+    sprintf('Inner Radius          : %g\n', RMIN)
+    sprintf('Outer Radius          : %g\n', RMAX)
+    sprintf('G : %g\n', G)
+    sprintf('Aspect Ratio          : %g\n', ASPECTRATIO)
+    sprintf('VKep at inner edge    : %.3g\n', sqrt(G*1.0*(1.-0.0)/RMIN))
+    sprintf('VKep at outer edge    : %.3g\n', sqrt(G*1.0/RMAX))
+    temp=2.0*pi*SIGMA0/(2.0-SIGMASLOPE)*((RMAX^(2.0-SIGMASLOPE)) -RMIN^(2.0-SIGMASLOPE));
+    %correct this and what follows...
+    sprintf('Initial Disk Mass             : %g\n', temp)
+    temp=2.0*pi*SIGMA0/(2.0-SIGMASLOPE)*(1.0 -RMIN^(2.0-SIGMASLOPE));
+    sprintf('Initial Mass inner to r=1.0  : %g \n', temp)
+    temp=2.0*pi*SIGMA0/(2.0-SIGMASLOPE)*(RMAX^(2.0-SIGMASLOPE)- 1.0);
+    sprintf('Initial Mass outer to r=1.0  : %g \n', temp)
+    sprintf('Travelling time for acoustic density waves :\n')
+    temp = 2.0/3.0/ASPECTRATIO*((RMAX^1.5)-(RMIN^1.5));
+    sprintf('* From Rmin to Rmax  : %.2g = %.2f orbits ~ %.1f outputs\n', temp, TellNbOrbits(temp), TellNbOutputs(temp))
+    temp = 2.0/3.0/ASPECTRATIO*((RMAX^1.5)-(1.0^1.5));
+    sprintf(' * From r=1.0 to Rmax: %.2g = %.2f orbits ~ %.1f outputs\n', temp, TellNbOrbits(temp), TellNbOutputs(temp))
+    temp = 2.0/3.0/ASPECTRATIO*((1.0^1.5)-(RMIN^1.5));
+    sprintf(' * From r=1.0 to Rmin: %.2g = %.2f orbits ~ %.1f outputs\n', temp, TellNbOrbits(temp), TellNbOutputs(temp))
+    temp = 2.0*pi*sqrt(RMIN*RMIN*RMIN/G/1.0);
+    sprintf('Orbital time at Rmin  : %.3g ~ %.2f outputs\n', temp, TellNbOutputs(temp))
+    temp = 2.0*pi*sqrt(RMAX*RMAX*RMAX/G/1.0);
+    sprintf('Orbital time at Rmax  : %.3g ~ %.2f outputs\n', temp, TellNbOutputs(temp))
+    sprintf('Sound speed :\n')
+    sprintf(' * At unit radius     : %.3g\n', ASPECTRATIO*sqrt(G*1.0))
+    sprintf(' * At outer edge      : %.3g\n', ASPECTRATIO*sqrt(G*1.0/RMAX))
+    sprintf(' * At inner edge      : %.3g\n', ASPECTRATIO*sqrt(G*1.0/RMIN))
+    sprintf('\nGrid properties:\n')
+    sprintf('----------------\n')
+    sprintf('Number of rings       : %d\n', NRAD)
+    sprintf('Number of sectors     : %d\n', NSEC)
+    sprintf('Total cells           : %d\n', NRAD*NSEC)
+    sprintf('\nOutputs properties:\n')
+    sprintf('-------------------\n')
+    sprintf('Time increment between outputs : %.3f = %.3f orbits\n', NINTERM*DT, TellNbOrbits(NINTERM*DT))
+    sprintf('At each output #i, the following files are written:\n')
+  %printf ("gasdens[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
+  %printf ("gasvrad[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
+  %printf ("gasvtheta[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
+  %if (Adiabatic == YES)
+  %  printf ("gasTemperature[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
+  %if (AdvecteLabel == YES)
+  %  printf ("gaslabel[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
+  %printf ("There will be in total %d outputs\n", NTOT/NINTERM);
+  %printf ("(which correspond to an elapsed time = %.3f or to %.2f orbits)\n", NTOT*DT, TellNbOrbits(NTOT*DT));
+  %nbfileoutput = 3.0;
+  %if (Adiabatic == YES)
+  %  nbfileoutput += 1.0;
+  %if (AdvecteLabel == YES)
+  %  nbfileoutput += 1.0;
+  %temp =nbfileoutput*GLOBALNRAD*NSEC*sizeof(real);
+  %temp *= (real)NTOT/(real)NINTERM;
+  %temp /= 1024.0*1024.0;
+  %printf ("So the code will produce ~%.2f Mbytes of data\n", temp);
+  %printf ("Check (eg by issuing a 'df' command) that you have enough disk space,\n");
+  %printf ("otherwise you will get a system full and the code will stop.\n");
+end
+
+function z = TellNbOrbits(temp)
+    global G;
+    z = temp/2.0/pi*sqrt(G*1.0/1.0/1.0);
+end
+
+function z = TellNbOutputs(temp)
+    global DT NINTERM;
+    z = temp/DT/NINTERM;
+end
+
