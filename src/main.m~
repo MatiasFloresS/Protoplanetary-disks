@@ -301,7 +301,9 @@ end
 
 function TellEverything()
     global RMIN RMAX ASPECTRATIO G SIGMA0 SIGMASLOPE NRAD NSEC NINTERM DT;
-    global Adiabatic LABELADVECTION;
+    global Adiabatic LABELADVECTION NTOT;
+    
+    total_size = NRAD*NSEC*8;
     
     sprintf('\nDisc properties:\n')
     sprintf('----------------\n')
@@ -342,28 +344,34 @@ function TellEverything()
     sprintf('-------------------\n')
     sprintf('Time increment between outputs : %.3f = %.3f orbits\n', NINTERM*DT, TellNbOrbits(NINTERM*DT))
     sprintf('At each output #i, the following files are written:\n')
-    sprintf('gasdens[i].dat : %d bytes\n',NRAD*NSEC*size(8)) % sizeof(double)
-    sprintf('gasvrad[i].dat : %d bytes\n',NRAD*NSEC*size(8))
-    sprintf('gasvtheta[i].dat : %d bytes\n', NRAD*NSEC*size(8))
+    sprintf('gasdens[i].dat : %d bytes\n',total_size) % sizeof(double)
+    sprintf('gasvrad[i].dat : %d bytes\n',total_size)
+    sprintf('gasvtheta[i].dat : %d bytes\n',total_size)
     if (strcmp(Adiabatic,'YES'))
-        printf('gasTemperature[i].dat : %d bytes\n',NRAD*NSEC*size(8))
+        sprintf('gasTemperature[i].dat : %d bytes\n',total_size)
     end
     
     if (strcmp(LABELADVECTION, 'YES'))
-        printf('gaslabel[i].dat : %d bytes\n',NRAD*NSEC*sizeof)));
-  %printf ("There will be in total %d outputs\n", NTOT/NINTERM);
-  %printf ("(which correspond to an elapsed time = %.3f or to %.2f orbits)\n", NTOT*DT, TellNbOrbits(NTOT*DT));
-  %nbfileoutput = 3.0;
-  %if (Adiabatic == YES)
-  %  nbfileoutput += 1.0;
-  %if (AdvecteLabel == YES)
-  %  nbfileoutput += 1.0;
-  %temp =nbfileoutput*GLOBALNRAD*NSEC*sizeof(real);
-  %temp *= (real)NTOT/(real)NINTERM;
-  %temp /= 1024.0*1024.0;
-  %printf ("So the code will produce ~%.2f Mbytes of data\n", temp);
-  %printf ("Check (eg by issuing a 'df' command) that you have enough disk space,\n");
-  %printf ("otherwise you will get a system full and the code will stop.\n");
+        sprintf('gaslabel[i].dat : %d bytes\n',total_size)
+    end
+    sprintf('There will be in total %d outputs\n', (NTOT/NINTERM))
+    sprintf('(which correspond to an elapsed time = %.3f or to %.2f orbits)\n', NTOT*DT, TellNbOrbits(NTOT*DT))
+    nbfileoutput = 3.0;
+    if (strcmp(Adiabatic,'YES'))
+        nbfileoutput = nbfileoutput + 1.0;
+    end
+    
+    if (strcmp(LABELADVECTION,'YES'))
+        nbfileoutput = nbfileoutput + 1.0;
+    end
+    
+    temp =nbfileoutput*total_size;
+    temp = temp * NTOT/NINTERM;
+    temp = temp /1024.0*1024.0;
+    sprintf('So the code will produce ~%.2f Mbytes of data\n', temp)
+    sprintf('Check (eg by issuing a df command) that you have enough disk space,\n')
+    sprintf('otherwise you will get a system full and the code will stop.\n')
+    
 end
 
 function z = TellNbOrbits(temp)

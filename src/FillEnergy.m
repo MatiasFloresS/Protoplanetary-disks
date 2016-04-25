@@ -9,7 +9,7 @@ function w = Energy(r)
     double energy0;
 
     if (ADIABATICINDEX == 1.0)
-        sprintf('The adiabatic index must differ from unity to initialize the gas internal energy. I must exit.')
+        fprintf('The adiabatic index must differ from unity to initialize the gas internal energy. I must exit.')
         quit cancel
     
     else

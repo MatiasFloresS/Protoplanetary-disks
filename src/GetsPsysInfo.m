@@ -53,7 +53,7 @@ function p = GetsPsysInfo(system, action)
         vxc = vx;
         vyc = vy;
     end
-    sprintf('%s',action)
+    fprintf('%s',action)
     switch action
         
         case 0

@@ -9,7 +9,7 @@ function FillPolar1DArrays()
     deltatheta = (RMAX-RMIN)/NRAD;
     if (strcmp(logGrid,'YES')) 
         Radii = RMIN*exp((0:NRAD)./NRAD*log(RMAX/RMIN));
-        sprintf('%.18g ',Radii);
+        %fprintf('%.18g ',Radii);
 
     elseif (strcmp(logGrid,'NO'))
         Radii = RMIN+deltatheta*(0:NRAD); 
@@ -18,7 +18,7 @@ function FillPolar1DArrays()
         %sprintf('%.18g ', Radii)
 
     else 
-        sprintf('end')
+        quit cancel;
     end
 
     %for i=0:GLOBALNRAD
@@ -56,7 +56,7 @@ function FillPolar1DArrays()
     %sprintf('%.18g ', Rinf)
     
     fileID = fopen('used_rad.dat','w');
-    fprintf(fileID,'%.18g \n',Radii);
+    %fprintf(fileID,'%.18g \n',Radii);
     fclose(fileID);
 
 end

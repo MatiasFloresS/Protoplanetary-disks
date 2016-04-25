@@ -1,7 +1,7 @@
 function cant_planets = InitPlanetarySystem()
     global system ;
     cant_planets = FindNumberOfPlanets();
-    sprintf ('%d planet(s) found.\n', cant_planets);
+    fprintf ('%d planet(s) found.\n', cant_planets);
     AllocPlanetsSystem(cant_planets);
     system{1} = cant_planets;
     information_planets(cant_planets);
@@ -10,13 +10,13 @@ end
 
 function cant_planets = FindNumberOfPlanets()
     global PLANETCONFIG;
-    sprintf('%s',PLANETCONFIG)
+    %fprintf('%s',PLANETCONFIG)
     num = 1;
     cant_planets = 0;
     filename = PLANETCONFIG;
     fid = fopen(filename, 'r');
     if fid == -1
-        sprintf('Cannot open file: %s', PLANETCONFIG)
+        fprintf('Cannot open file: %s', PLANETCONFIG)
         quit cancel
     else
         tline = fgetl(fid);
@@ -32,7 +32,7 @@ function cant_planets = FindNumberOfPlanets()
             tline = fgetl(fid);
         end
         fclose(fid);
-        sprintf('%d\n',cant_planets);
+        %fprintf('%d\n',cant_planets);
         return
     end
 end
@@ -87,7 +87,7 @@ function information_planets(cant_planets)
     num_planet=1;
     fid = fopen(PLANETCONFIG, 'r');
     if fid == -1
-        sprintf('Cannot open file: %s', PLANETCONFIG)
+        fprintf('Cannot open file: %s', PLANETCONFIG)
         quit cancel
     else
         tline = fgetl(fid);
