@@ -72,7 +72,7 @@ function main(ParameterFile,TellE)
 end
 
 function ReadVariables(ParameterFile)
-    cant_inputs = 60; % Se da memoria para 60 inputs, esto se puede modificar;
+    cant_inputs = 500; % Se da memoria para 500 inputs, esto se puede modificar;
     A = cell(2,1);
     A{1,1} = [];
     A{2,1} = [];
@@ -123,7 +123,7 @@ function InitVariables(A)
     % variables leidas
     global DT SIGMA0 NINTERM NTOT OUTPUTDIR INNERBOUNDARY LABELADVECTION;
     global TRANSPORT PLANETCONFIG MASSTAPER RADIALSPACING NRAD NSEC RMIN RMAX;
-    global THICKNESSSMOTHING ROCHESMOOTHING ASPECTRATIO VISCOSITY ALPHAVISCOSITY;
+    global THICKNESSSMOOTHING ROCHESMOOTHING ASPECTRATIO VISCOSITY ALPHAVISCOSITY;
     global SIGMASLOPE RELEASERADIUS RELEASEDATE OMEGAFRAME DISK FRAME OUTERSOURCEMASS;
     global WRITEDENSITY WRITEVELOCITY WRITEENERGY WRITETEMPERATURE WRITEDIVV WRITEQPLUS;
     global INDIRECTTERM EXCLUDEHILL IMPOSEDDISKDRIFT FLARINGINDEX ECCENTRICITY CAVITYRADIUS;
@@ -135,6 +135,15 @@ function InitVariables(A)
     global FastTransport OpenInner NonReflecting Evanescent LogGrid Corotating;
     global GuidingCenter SelfGravity ZMPlus Write_Temperature Adiabatic SGZeroMode;
     
+    B ={'DT', 'SIGMA0', 'NINTERM', 'NTOT', 'OUTPUTDIR', 'INNERBOUNDARY', 'LABELADVECTION', 'TRANSPORT', ...
+        'PLANETCONFIG', 'MASSTAPER', 'RADIALSPACING', 'NRAD', 'NSEC', 'RMIN', 'RMAX', 'THICKNESSSMOOTHING', ...
+        'ROCHESMOOTHING','ASPECTRATIO', 'VISCOSITY', 'ALPHAVISCOSITY', 'SIGMASLOPE','RELEASERADIUS', ...
+        'RELEASEDATE', 'OMEGAFRAME', 'DISK', 'FRAME', 'OUTERSOURCEMASS', 'WRITEDENSITY', 'WRITEVELOCITY', ...
+        'WRITEENERGY', 'WRITETEMPERATURE', 'WRITEDIVV', 'WRITEQPLUS', 'INDIRECTTERM', 'EXCLUDEHILL', ...
+        'IMPOSEDDISKDRIFT', 'FLARINGINDEX', 'ECCENTRICITY', 'CAVITYRADIUS', 'CAVITYRATIO', 'CAVITYWIDTH', ...
+        'TRANSITIONRADIUS', 'TRANSITIONRATIO', 'TRANSITIONWIDTH', 'LAMBDADOUBLING', 'SELFGRAVITY', ...
+        'CICPLANET', 'FORCEDCIRCULAR', 'ZMPLUS', 'ADIABATIC', 'ADIABATICINDEX', 'COOLING', 'COOLINGTIME0'};
+
     DT = 1.0;     
     SIGMA0 = 173.0;
     NINTERM = 10.0;
@@ -150,7 +159,7 @@ function InitVariables(A)
     NSEC = 64.0;
     RMIN = 1.0;
     RMAX = 1.0;
-    THICKNESSSMOTHING = 0.0;
+    THICKNESSSMOOTHING = 0.0;
     ROCHESMOOTHING = 0.0;
     ASPECTRATIO = 0.05;
     VISCOSITY = 0.0;
@@ -199,12 +208,24 @@ function InitVariables(A)
     SelfGravity = 'NO';
     SGZeroMode = 'NO';
     Adiabatic = 'NO';
-    
+    size(A)
     for i=1:size(A)
         varname = upper(genvarname(A{i,1}));
         eval([varname '= A{i,2};']);
     end
     
+    C = setdiff(B,upper(A(1:size(A))));
+    
+    fprintf('Secondary variables omitted :\n');
+    a = size(C);
+    a = a(1,2);
+    for i=1:a
+        if (isa(eval(C{1,i}),'double'))
+            fprintf('%s ;\t Default value : %g\n', C{i}, eval(C{1,i}));
+        else
+            fprintf('%s ;\t Default Value : %s\n', C{i}, eval(C{1,i}));
+        end
+    end
     
   if (strcmp(TRANSPORT,'S'))  % falta definir que caso va acá
       FastTransport = 'NO';
@@ -279,7 +300,7 @@ function InitVariables(A)
       quit cancel;
   end
   
-  if ((THICKNESSSMOTHING <= 0.0) & (ROCHESMOOTHING <= 0.0))
+  if ((THICKNESSSMOOTHING <= 0.0) & (ROCHESMOOTHING <= 0.0))
       fprintf('A non-vanishing potential smoothing length is required.\n');
       fprintf('Please use either of the following variables:\n');
       fprintf ('ThicknessSmoothing *or* RocheSmoothing.\n');
