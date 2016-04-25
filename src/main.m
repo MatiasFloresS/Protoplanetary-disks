@@ -301,6 +301,9 @@ end
 
 function TellEverything()
     global RMIN RMAX ASPECTRATIO G SIGMA0 SIGMASLOPE NRAD NSEC NINTERM DT;
+    global Adiabatic LABELADVECTION NTOT;
+    
+    total_size = NRAD*NSEC*8;
     
     sprintf('\nDisc properties:\n')
     sprintf('----------------\n')
@@ -341,14 +344,17 @@ function TellEverything()
     sprintf('-------------------\n')
     sprintf('Time increment between outputs : %.3f = %.3f orbits\n', NINTERM*DT, TellNbOrbits(NINTERM*DT))
     sprintf('At each output #i, the following files are written:\n')
-  %printf ("gasdens[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %printf ("gasvrad[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %printf ("gasvtheta[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %if (Adiabatic == YES)
-  %  printf ("gasTemperature[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %if (AdvecteLabel == YES)
-  %  printf ("gaslabel[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %printf ("There will be in total %d outputs\n", NTOT/NINTERM);
+    sprintf('gasdens[i].dat : %d bytes\n',total_size) % sizeof(double)
+    sprintf('gasvrad[i].dat : %d bytes\n',total_size)
+    sprintf('gasvtheta[i].dat : %d bytes\n',total_size)
+    if (strcmp(Adiabatic,'YES'))
+        sprintf('gasTemperature[i].dat : %d bytes\n',total_size)
+    end
+    
+    if (strcmp(LABELADVECTION, 'YES'))
+        sprintf('gaslabel[i].dat : %d bytes\n',total_size)
+    end
+    sprintf('There will be in total %d outputs\n', num(NTOT/NINTERM))
   %printf ("(which correspond to an elapsed time = %.3f or to %.2f orbits)\n", NTOT*DT, TellNbOrbits(NTOT*DT));
   %nbfileoutput = 3.0;
   %if (Adiabatic == YES)

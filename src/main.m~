@@ -300,7 +300,8 @@ function InitVariables(A)
 end
 
 function TellEverything()
-    global RMIN RMAX ASPECTRATIO G SIGMA0 SIGMASLOPE;
+    global RMIN RMAX ASPECTRATIO G SIGMA0 SIGMASLOPE NRAD NSEC NINTERM DT;
+    global Adiabatic LABELADVECTION;
     
     sprintf('\nDisc properties:\n')
     sprintf('----------------\n')
@@ -321,33 +322,35 @@ function TellEverything()
     temp = 2.0/3.0/ASPECTRATIO*((RMAX^1.5)-(RMIN^1.5));
     sprintf('* From Rmin to Rmax  : %.2g = %.2f orbits ~ %.1f outputs\n', temp, TellNbOrbits(temp), TellNbOutputs(temp))
     temp = 2.0/3.0/ASPECTRATIO*((RMAX^1.5)-(1.0^1.5));
-    sprintf(' * From r=1.0 to Rmax: %.2g = %.2f orbits ~ %.1f outputs\n', temp, TellNbOrbits(temp), TellNbOutputs(temp));
-    temp = 2.0/3.0/ASPECTRATIO*((1.01.5)-pow(RMIN,1.5));
-  %printf (" * From r=1.0 to Rmin: %.2g = %.2f orbits ~ %.1f outputs\n", temp, TellNbOrbits(temp), TellNbOutputs(temp));
-  %temp = 2.0*PI*sqrt(RMIN*RMIN*RMIN/G/1.0);
-  %printf ("Orbital time at Rmin  : %.3g ~ %.2f outputs\n", temp, TellNbOutputs(temp));
-  %temp = 2.0*PI*sqrt(RMAX*RMAX*RMAX/G/1.0);
-  %printf ("Orbital time at Rmax  : %.3g ~ %.2f outputs\n", temp, TellNbOutputs(temp));
-  %printf ("Sound speed :\n");
-  %printf (" * At unit radius     : %.3g\n", ASPECTRATIO*sqrt(G*1.0));
-  %printf (" * At outer edge      : %.3g\n", ASPECTRATIO*sqrt(G*1.0/RMAX));
-  %printf (" * At inner edge      : %.3g\n", ASPECTRATIO*sqrt(G*1.0/RMIN));
-  %printf ("\nGrid properties:\n");
-  %printf ("----------------\n");
-  %printf ("Number of rings       : %d\n", NRAD);
-  %printf ("Number of sectors     : %d\n", NSEC);
-  %printf ("Total cells           : %d\n", NRAD*NSEC);
-  %printf ("\nOutputs properties:\n");
-  %printf ("-------------------\n");
-  %printf ("Time increment between outputs : %.3f = %.3f orbits\n", NINTERM*DT, TellNbOrbits(NINTERM*DT));
-  %printf ("At each output #i, the following files are written:\n");
-  %printf ("gasdens[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %printf ("gasvrad[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %printf ("gasvtheta[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %if (Adiabatic == YES)
-  %  printf ("gasTemperature[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
-  %if (AdvecteLabel == YES)
-  %  printf ("gaslabel[i].dat : %d bytes\n",(int)(GLOBALNRAD*NSEC*sizeof(real)));
+    sprintf(' * From r=1.0 to Rmax: %.2g = %.2f orbits ~ %.1f outputs\n', temp, TellNbOrbits(temp), TellNbOutputs(temp))
+    temp = 2.0/3.0/ASPECTRATIO*((1.0^1.5)-(RMIN^1.5));
+    sprintf(' * From r=1.0 to Rmin: %.2g = %.2f orbits ~ %.1f outputs\n', temp, TellNbOrbits(temp), TellNbOutputs(temp))
+    temp = 2.0*pi*sqrt(RMIN*RMIN*RMIN/G/1.0);
+    sprintf('Orbital time at Rmin  : %.3g ~ %.2f outputs\n', temp, TellNbOutputs(temp))
+    temp = 2.0*pi*sqrt(RMAX*RMAX*RMAX/G/1.0);
+    sprintf('Orbital time at Rmax  : %.3g ~ %.2f outputs\n', temp, TellNbOutputs(temp))
+    sprintf('Sound speed :\n')
+    sprintf(' * At unit radius     : %.3g\n', ASPECTRATIO*sqrt(G*1.0))
+    sprintf(' * At outer edge      : %.3g\n', ASPECTRATIO*sqrt(G*1.0/RMAX))
+    sprintf(' * At inner edge      : %.3g\n', ASPECTRATIO*sqrt(G*1.0/RMIN))
+    sprintf('\nGrid properties:\n')
+    sprintf('----------------\n')
+    sprintf('Number of rings       : %d\n', NRAD)
+    sprintf('Number of sectors     : %d\n', NSEC)
+    sprintf('Total cells           : %d\n', NRAD*NSEC)
+    sprintf('\nOutputs properties:\n')
+    sprintf('-------------------\n')
+    sprintf('Time increment between outputs : %.3f = %.3f orbits\n', NINTERM*DT, TellNbOrbits(NINTERM*DT))
+    sprintf('At each output #i, the following files are written:\n')
+    sprintf('gasdens[i].dat : %d bytes\n',NRAD*NSEC*size(8)) % sizeof(double)
+    sprintf('gasvrad[i].dat : %d bytes\n',NRAD*NSEC*size(8))
+    sprintf('gasvtheta[i].dat : %d bytes\n', NRAD*NSEC*size(8))
+    if (strcmp(Adiabatic,'YES'))
+        printf('gasTemperature[i].dat : %d bytes\n',NRAD*NSEC*size(8))
+    end
+    
+    if (strcmp(LABELADVECTION, 'YES'))
+        printf('gaslabel[i].dat : %d bytes\n',NRAD*NSEC*sizeof)));
   %printf ("There will be in total %d outputs\n", NTOT/NINTERM);
   %printf ("(which correspond to an elapsed time = %.3f or to %.2f orbits)\n", NTOT*DT, TellNbOrbits(NTOT*DT));
   %nbfileoutput = 3.0;
