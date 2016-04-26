@@ -67,7 +67,6 @@ function ReadVariables(ParameterFile)
     cero = zeros(1,cant_inputs);
     A{1,1} = cero;
     A{2,1} = cero;
-    fprintf('%s\n',ParameterFile);
     c = 1;
     fid = fopen(ParameterFile, 'r');
     if fid == -1
@@ -189,7 +188,6 @@ function InitVariables(A)
     SelfGravity = 'NO';
     SGZeroMode = 'NO';
     Adiabatic = 'NO';
-    size(A)
     for i=1:size(A)
         varname = upper(matlab.lang.makeValidName(A{i,1}));
         eval([varname '= A{i,2};']);
@@ -198,7 +196,6 @@ function InitVariables(A)
     C = setdiff(B,upper(A(1:size(A))));
     fprintf('Secondary variables omitted :\n');
     a = size(C);
-
     for i=1:a(1,2)
         if (isa(eval(C{1,i}),'double'))
             fprintf('%s ;\t Default value : %g\n', C{i}, eval(C{1,i}));
