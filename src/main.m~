@@ -1,5 +1,5 @@
 function main(ParameterFile,TellE)
-    global force system  SigmaMed R MU  NRAD NSEC EnergyMed Corotating G ScalingFactor;
+    global force system  SigmaMed R MU  NRAD NSEC EnergyMed Corotating G ;
     global PhysicalTime PhysicalTimeInitial RESTART Adiabatic SELFGRAVITY OMEGAFRAME;
     
     ReadVariables(ParameterFile);
@@ -405,6 +405,4 @@ function mdcp = CircumPlanetaryMass(gas_density, system)
     end    
 end
 
-function MultiplyPolarGridbyConstant(~,~)
-
-end
+function MultiplyPolarGridbyConstant 

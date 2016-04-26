@@ -139,7 +139,6 @@ function InitLabel(gas_label,system)
     end
     
     distance = sqrt((x-xp).*(x-xp) + (y-yp).*(y-yp));
-    
     for i=1:NRAD
         if (distance(i, :) < rhill)
             gas_label(i,:) = 1.0;

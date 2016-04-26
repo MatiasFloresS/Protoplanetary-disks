@@ -68,7 +68,7 @@ function AllocPlanetsSystem (cant_planets)
 end
 
 function information_planets(cant_planets)
-    global GlobalRmed Radii system G PLANETCONFIG ECCENTRICITY CICPlanet ;
+    global GlobalRmed Radii system G PLANETCONFIG ECCENTRICITY CICPlanet HillRadius;
     num=0;
     num_planet=1;
     fid = fopen(PLANETCONFIG, 'r');
@@ -84,7 +84,7 @@ function information_planets(cant_planets)
             end
             if (num == 1 && cant_planets ~=0)
                 fscanf(fid, '%s', 1); % nombre de los planetas
-                dist = fscanf(fid, '%d', 1);
+                dist = fscanf(fid, '%f', 1);
                 if (CICPlanet == true) %initialization puts centered-in-cell planets (with excentricity = 0 only)
                     j = 0;
                     while (GlobalRmed(j+1) < dist) 
@@ -121,6 +121,6 @@ function information_planets(cant_planets)
             tline = fgetl(fid);    
         end
         fclose(fid);
-        %hillradius = system{3,1}(1) * (system{2,1}(1)/3)^(1./3.);
+        HillRadius = system{3,1}(1) * (system{2,1}(1)/3)^(1./3.);
     end
 end

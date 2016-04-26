@@ -1,5 +1,5 @@
 function FillPolar1DArrays()
-    global GlobalRmed Radii Rmed Rinf NRAD NSEC RMAX RMIN;
+    global GlobalRmed Radii Rmed Rinf NRAD NSEC RMAX RMIN Surf;
     Radii = zeros(1,NRAD+1);
     prompt = 'LogGrid? ';
     logGrid = input(prompt,'s');
@@ -21,6 +21,7 @@ function FillPolar1DArrays()
     Rmed = 2.0/3.0 * (Rsup.*Rsup.*Rsup - Rinf.*Rinf.*Rinf);
     Rmed = Rmed ./(Rsup.*Rsup - Rinf.*Rinf);
     Surf = pi * (Rsup.*Rsup - Rinf.*Rinf)/NSEC;
+    
     InvRmed = 1.0./Rmed;
     InvSurf = 1.0./Surf;
     InvDiffRsup = 1.0./(Rsup-Rinf);
