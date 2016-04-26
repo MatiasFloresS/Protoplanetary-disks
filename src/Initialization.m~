@@ -1,4 +1,5 @@
 function Initialization(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label, system)
+
     global RESTART;
     %ReadPrevDim() Esta funcion leera dims.dat y used_rad.dat, mas adelante
     %se vera eso
@@ -9,10 +10,11 @@ function Initialization(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_lab
     if (RESTART == 1)
        % checkrebin and others functions 
     end
-    WriteDim();    
+    WriteDim();
+    
 end
 
-function InitEuler(Vr, Vt, gas_density, gas_energy)
+function z = InitEuler(Vr, Vt, gas_density, gas_energy)
     global NRAD NSEC SoundSpeed Pressure Temperature;
     %InitTransport()
     %RadMomP         = zeros([NRAD,NSEC]);
@@ -56,7 +58,9 @@ function InitEuler(Vr, Vt, gas_density, gas_energy)
     ComputeSoundSpeed(gas_density, gas_energy);
     ComputePressureField(gas_density, gas_energy);
     ComputeTemperatureField(gas_density, gas_energy);
-    InitGasVelocities (Vr, Vt) 
+    %InitGasVelocities (Vr, Vt)
+    z=0;
+    
 end
 
 function InitComputeAccel()
@@ -154,8 +158,4 @@ function WriteDim()
     fileID = fopen('Escritorio/Prototipo/dims.dat','w');
     fprintf(fileID,'%d\t%d\t\t%d\t%d\t%f\t%d\t%d\t%d\n',0,0,0,0,RMAX, int16(NTOT/NINTERM), NRAD, NSEC);
     fclose(fileID);
-end
-
-function InitGasVelocities(~,~)
-    % do nothing atm
 end

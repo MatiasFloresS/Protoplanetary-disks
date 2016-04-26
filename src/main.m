@@ -1,7 +1,6 @@
 function main(ParameterFile,TellE)
-    global force system  SigmaMed R MU  NRAD NSEC EnergyMed;
+    global force system  SigmaMed R MU  NRAD NSEC EnergyMed Corotating G ;
     global PhysicalTime PhysicalTimeInitial RESTART Adiabatic SELFGRAVITY OMEGAFRAME;
-    global Corotating;
     
     ReadVariables(ParameterFile);
     if (strcmp(TellE,'YES'))
@@ -12,7 +11,9 @@ function main(ParameterFile,TellE)
     PhysicalTimeInitial = 0.0;
     PhysicalTime =0.0;
     FREQUENCY = 2;
+    dimfxy = 11;
     
+    G = 1.0;
     R = 1.0; % Mean molecular weight
     MU = 1.0; % Universal Gas Constant in code units 
     
@@ -22,13 +23,10 @@ function main(ParameterFile,TellE)
     gas_energy      = zeros([NRAD,NSEC]);
     gas_label       = zeros([NRAD,NSEC]); 
     
-    dimfxy = 11;
     FillPolar1DArrays();
     AllocateForce(dimfxy);
+    InitPlanetarySystem();
 
-    planets = InitPlanetarySystem();
-    %fprintf('%d\n',planets);
-    
     % InitGasDensity
     FillSigma();
     for j=1:NSEC
@@ -49,26 +47,16 @@ function main(ParameterFile,TellE)
         % the radial self-gravity acceleration. The disk radial and
         % azimutal velocities are not updated 
     end
-    
     %system;
     ListPlanets(system);
-    
     OmegaFrame = OMEGAFRAME;
     
     if (strcmp(Corotating,'YES'))
         OmegaFrame = GetsPsysInfo(system, FREQUENCY);
     end
     
-    fprintf('%.18ld\n',OmegaFrame);
-    
     Initialization (gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label, system);
     force;
-    %force{9,1}(2) especifico
-
-    %for i=1:8
-    %    system{i,1}
-    %end
-    
 end
 
 function ReadVariables(ParameterFile)
@@ -88,13 +76,10 @@ function ReadVariables(ParameterFile)
     else
         tline = fgetl(fid);
         while ischar(tline)
-            %disp(tline);
             matches = strfind(tline, '###');
             if( matches ~= 0)
                 %do nothing
-            
             else
-                %disp(tline);
                 a = fscanf(fid, '%s', 1);
                 if (~strcmp(a, ''))
                     if (~strcmp(a(1),'#'))
@@ -102,21 +87,17 @@ function ReadVariables(ParameterFile)
                         if ((b ~= str2double(b)) & (~isnan(str2double(b))))
                             b = str2double(b);  
                         end
-                        
                         A{c,1} = a;
                         A{c,2} = b;
                         c = c + 1;
                     end
                 end
             end
-            
             tline = fgetl(fid);
         end
         fclose(fid);        
-        
     end
     InitVariables(A);
-    return
 end
 
 function InitVariables(A)
@@ -210,16 +191,15 @@ function InitVariables(A)
     Adiabatic = 'NO';
     size(A)
     for i=1:size(A)
-        varname = upper(genvarname(A{i,1}));
+        varname = upper(matlab.lang.makeValidName(A{i,1}));
         eval([varname '= A{i,2};']);
     end
     
     C = setdiff(B,upper(A(1:size(A))));
-    
     fprintf('Secondary variables omitted :\n');
     a = size(C);
-    a = a(1,2);
-    for i=1:a
+
+    for i=1:a(1,2)
         if (isa(eval(C{1,i}),'double'))
             fprintf('%s ;\t Default value : %g\n', C{i}, eval(C{1,i}));
         else
@@ -273,7 +253,7 @@ function InitVariables(A)
       Write_Temperature = 'YES';
   end
   
-  if ((strcmp(Adiabatic,'YES')) & (ADIABATICINDEX == 1)) 
+  if ((strcmp(Adiabatic,'YES')) && (ADIABATICINDEX == 1)) 
       fprintf('You cannot have Adiabatic = YES and AdiabatcIndex = 1. I decided to put ');
       fprintf('Adiabatic = No, to simulate a locally isothermal equation of state. Please ');
       fprintf('check that it what you really wanted to do!\n');
@@ -300,7 +280,7 @@ function InitVariables(A)
       quit cancel;
   end
   
-  if ((THICKNESSSMOOTHING <= 0.0) & (ROCHESMOOTHING <= 0.0))
+  if ((THICKNESSSMOOTHING <= 0.0) && (ROCHESMOOTHING <= 0.0))
       fprintf('A non-vanishing potential smoothing length is required.\n');
       fprintf('Please use either of the following variables:\n');
       fprintf ('ThicknessSmoothing *or* RocheSmoothing.\n');
@@ -325,7 +305,6 @@ function TellEverything()
     global Adiabatic LABELADVECTION NTOT;
     
     total_size = NRAD*NSEC*8;
-    
     fprintf('\nDisc properties:\n');
     fprintf('----------------\n');
     fprintf('Inner Radius          : %g\n', RMIN);

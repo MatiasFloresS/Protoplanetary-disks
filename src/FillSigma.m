@@ -5,16 +5,12 @@ function FillSigma()
 end 
 
 function z = Sigma(r)
-    global SIGMASLOPE SIGMA0;
+    global SIGMASLOPE SIGMA0 CAVITYRADIUS CAVITYRATIO;
     cavity = 1.0;
-    CAVITYRADIUS= 0.0;
     ScalingFactor = 1;
-    CAVITYRATIO = 1.0;
 
     if (r< CAVITYRADIUS)
         cavity = 1.0/CAVITYRATIO;
     end
-
     z = cavity*ScalingFactor*SIGMA0*r.^(-SIGMASLOPE);
-
 end

@@ -7,7 +7,6 @@ function ListPlanets (system)
         %[system{5,1}(i) system{6,1}(i)]
         if (system{7,1}(i) == 0.0)
             fprintf('Non-accreting\n')
-        
         else
             fprintf('accretion time = %.20d\n', 1.0/system{7,1}(i))
         end
@@ -23,7 +22,6 @@ function ListPlanets (system)
         else
             fprintf('Does not feel the other planets potential \n')
         end
-        
         fprintf('\n')
     end
 end 

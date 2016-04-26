@@ -50,7 +50,8 @@ function p = GetsPsysInfo(system, action)
         yc = y;
         vxc = vx;
         vyc = vy;
-    end    
+    end
+    
     switch action
         
         case 0
