@@ -433,8 +433,12 @@ end
 
 function WriteBigPlanetFile(TimeStep,num_planet)
     global OmegaFrame Xplanet Yplanet VXplanet VYplanet MplanetVirtual mdcp PhysicalTime;
-    currentFile = sprintf('Escritorio/Prototipo/bigplanet%d.dat',num_planet);   
-    fileID = fopen(currentFile,'At');
+    currentFile = sprintf('Escritorio/Prototipo/bigplanet%d.dat',num_planet);
+    fileIDexist = fopen(currentFile, 'a');
+    if (fileIDexist)
+        delete currentFile; % si es
+    end
+    fileID = fopen(currentFile,'a+');
     fprintf(fileID,'%d\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\n', TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, 0, PhysicalTime, OmegaFrame, mdcp, 0);
     fclose(fileID);
 end

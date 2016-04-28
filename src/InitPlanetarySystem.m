@@ -122,5 +122,6 @@ function information_planets(cant_planets)
         end
         fclose(fid);
         HillRadius = system{3,1}(1) * (system{2,1}(1)/3)^(1./3.);
+        system{1,1} = num_planet-1;
     end
 end
