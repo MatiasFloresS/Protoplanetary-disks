@@ -1,16 +1,29 @@
-function main(ParameterFile,TellE)
-    global force system  SigmaMed R MU  NRAD NSEC EnergyMed Corotating G ScalingFactor;
-    global PhysicalTime PhysicalTimeInitial RESTART Adiabatic SELFGRAVITY OMEGAFRAME NTOT;
+function main(ParameterFile, TellE)
+    global SigmaMed R MU Rmed NRAD NSEC Corotating G ScalingFactor;
+    global PhysicalTime PhysicalTimeInitial RESTART Adiabatic SELFGRAVITY OMEGAFRAME NTOT MassTaper;
+    global OmegaFrame CVNR;
+    global CFLSECURITY MARK FREQUENCY GET;
+    global Xplanet Yplanet Drr Drp Dpp Trr Trp Tpp divergence gradp gradphi gradp2 gradphi2;
+    global vt2 vradint vthetaint invdt1 invdt2 invdt3 invdt4 dvt dvr Vresidual;
+    global k1 k2 k3 k4 k5 k6 q0 PlanetMasses distances vradnew vthetanew;
+    global RadMomP RadMomM ThetaMomP ThetaMomM dq dqp dqm densStar QRStar temp2 elong;
+    global Vmed VthetaRes NoSplitAdvection dqm2 dqp2;
     
     ReadVariables(ParameterFile);
     if (strcmp(TellE,'YES'))
         TellEverything();
     end
     
+    Xplanet = 0.0;
+    Yplanet = 0.0;
+    CVNR = 1.41;
+    CFLSECURITY = 0.5;
     RESTART = 0;
     PhysicalTimeInitial = 0.0;
     PhysicalTime =0.0;
     FREQUENCY = 2;
+    MARK = 1;
+    GET = 0;
     dimfxy = 11;
     ScalingFactor = 1.0;
     InnerOutputCounter=0;
@@ -18,28 +31,108 @@ function main(ParameterFile,TellE)
     R = 1.0; % Mean molecular weight
     MU = 1.0; % Universal Gas Constant in code units 
     
-    gas_density     = zeros([NRAD,NSEC]);
-    gas_v_rad       = zeros([NRAD,NSEC]);
-    gas_v_theta     = zeros([NRAD,NSEC]);
-    gas_energy      = zeros([NRAD,NSEC]);
-    gas_label       = zeros([NRAD,NSEC]); 
+    gas_density     = zeros([NRAD+1,NSEC]);
+    gas_v_rad       = zeros([NRAD+1,NSEC]);
+    gas_v_theta     = zeros([NRAD+1,NSEC]);
+    gas_energy      = zeros([NRAD+1,NSEC]);
+    gas_label       = zeros([NRAD+1,NSEC]); 
+    
+    %global matriz
+    
+    k1 = zeros([1,4]);
+    k2 = zeros([1,4]);
+    k3 = zeros([1,4]);
+    k4 = zeros([1,4]);
+    k5 = zeros([1,4]);
+    k6 = zeros([1,4]);
+    
+    temp2 = zeros([NRAD,NSEC]);
+    
+    Drr = zeros([NRAD+1, NSEC]);
+    Dpp = zeros([NRAD+1, NSEC]);
+    Drp = zeros([NRAD+1, NSEC]);
+    Trr = zeros([NRAD+1, NSEC]);
+    Tpp = zeros([NRAD+1, NSEC]);
+    Trp = zeros([NRAD+1, NSEC]);
+    divergence = zeros([NRAD+1, NSEC]);
+    
+    gradp = zeros([NRAD+1,NSEC]);
+    gradphi = zeros([NRAD+1,NSEC]);
+    gradp2 = zeros([NRAD+1,NSEC]);
+    gradphi2 = zeros([NRAD+1,NSEC]);
+    vt2 = zeros([NRAD+1,NSEC]);
+    vradint = zeros([NRAD+1, NSEC]);
+    vthetaint = zeros([NRAD+1, NSEC]);
+    vradnew = zeros([NRAD+1, NSEC]);
+    vthetanew = zeros([NRAD+1, NSEC]);
+    
+    RadMomP = zeros([NRAD+1, NSEC]);
+    RadMomM = zeros([NRAD+1, NSEC]);
+    ThetaMomP = zeros([NRAD+1, NSEC]);
+    ThetaMomM = zeros([NRAD+1, NSEC]);
+    
+    invdt1 = zeros([NRAD,NSEC]);
+    invdt2 = zeros([NRAD,NSEC]);
+    invdt3 = zeros([NRAD,NSEC]);
+    invdt4 = zeros([NRAD,NSEC]);
+    
+    dvt = zeros([NRAD, NSEC]);
+    dvr = zeros([NRAD, NSEC]);
+    Vresidual = zeros([NRAD+1, NSEC]);
+    distances = zeros([NRAD+1, NSEC]);
+    
+    dq = zeros([NSEC, NRAD]);
+    dqm = zeros([NRAD, NSEC]);
+    dqp = zeros([NRAD, NSEC]);
+    dqm2 = zeros([NRAD, NSEC]);
+    dqp2 = zeros([NRAD, NSEC]);
+
+    densStar = zeros([NRAD+1, NSEC]);
+    QRStar = zeros([NRAD+1,NSEC]);
+    elong = zeros([NRAD,NSEC]);
+    Vmed = zeros([1,NRAD]);
+    VthetaRes = zeros([NRAD, NSEC]);
+    NoSplitAdvection = zeros([1,NRAD]);
+    
+    n = 1; %numero de planetas
+    q0 = zeros([1,4]);
+    PlanetMasses = zeros(n);
     
     FillPolar1DArrays();
     AllocateForce(dimfxy);
     InitPlanetarySystem();
-
+    
+    MassTaper = 0.0;
+    
     % InitGasDensity
     FillSigma();
+    
     for j=1:NSEC
-        gas_density(:,j) = SigmaMed;
+        gas_density(1:NRAD,j) = SigmaMed(:);
     end
     
-    if (Adiabatic)
+    %{
+    binFile(Rmed, 'Rmed');
+    binFile(Rsup, 'Rsup');
+    binFile(Rinf, 'Rinf');
+    binFile(Surf, 'Surf');
+    binFile(InvRmed, 'InvRmed');
+    binFile(InvSurf, 'InvSurf');
+    binFile(InvDiffRsup, 'InvDiffRsup');
+    binFile(InvRinf, 'InvRinf');
+    binFile(InvDiffRmed, 'InvDiffRmed');
+    binFile(gas_density, 'dens');
+    binFile(Radii, 'Radii');
+    %}
+    
+    if (strcmp(Adiabatic,'YES'))
         % InitGasEnergy
-        FillEnergy();
+        EnergyMed = FillEnergy(Rmed);
         for j=1:NSEC
             gas_energy(:,j) = EnergyMed;
         end
+    else
+        
     end
     
     if (SELFGRAVITY)
@@ -48,31 +141,65 @@ function main(ParameterFile,TellE)
         % the radial self-gravity acceleration. The disk radial and
         % azimutal velocities are not updated 
     end
-    %system;
-    ListPlanets(system);
+
+    ListPlanets();
     OmegaFrame = OMEGAFRAME;
     
     if (strcmp(Corotating,'YES'))
-        OmegaFrame = GetsPsysInfo(system, FREQUENCY);
+        OmegaFrame = GetsPsysInfo(FREQUENCY);
     end
     
-    Initialization (gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label, system);
-    force;
+    [gas_v_rad, gas_v_theta, gas_label] = Initialization (gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label);
+    
+    %{
+    binFile(gas_v_rad, 'vrad');
+    binFile(gas_v_theta, 'vtheta');
+    binFile(gas_label, 'label');
+    binFile(SoundSpeed, 'SoundSpeed');
+    binFile(CellAbscissa, 'CellAbscissa');
+    binFile(CellOrdinate, 'CellOrdinate');
+    binFile(Pressure, 'Pressure');
+    binFile(Temperature, 'Temperature');
+    %}
+    
+    %force;
     %Initial gas_density is used to compute the circumplanetary mass with initial density field
-    mdcp0 = CircumPlanetaryMass(gas_density, system);
+    mdcp0 = CircumPlanetaryMass(gas_density);
     
     PhysicalTimeInitial = PhysicalTime;
     MultiplyPolarGridbyConstant (gas_density);
-    for i=0:10
+    
+    tic 
+    for i=0:1
         InnerOutputCounter = InnerOutputCounter + 1;
-        if (InnerOutputCounter == 1)
+        if (InnerOutputCounter == 3)
             InnerOutputCounter = 0;
-            WriteBigPlanetSystemFile(system, 0);
+            %WriteBigPlanetSystemFile(0);
+        end
+        
+        [gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label] =...
+            AlgoGas(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label);
+
+        if (mod(i+1, 20) == 0)
+            fprintf('\n');
         end
     end
+    toc
+   
+    binFile(gas_v_rad(1:NRAD,:), 'vrad');
+    binFile(gas_v_theta(1:NRAD,:), 'vtheta');
+    binFile(gas_density(1:NRAD,:), 'dens');
+    %binFile(densStar(1:NRAD,:), 'densStar');
+    %binFile(QRStar(1:NRAD,:), 'QRStar');
+    %binFile(RadMomP(1:NRAD,:), 'Radmomp');
+    %binFile(RadMomM(1:NRAD,:), 'Radmomm');
+    %binFile(ThetaMomP(1:NRAD,:), 'Thetamomp');
+    %binFile(ThetaMomM(1:NRAD,:), 'Thetamomm');
     
+
 end
 
+%Lista
 function ReadVariables(ParameterFile)
     cant_inputs = 500; % Se da memoria para 500 inputs, esto se puede modificar;
     A = cell(2,1);
@@ -113,6 +240,7 @@ function ReadVariables(ParameterFile)
     InitVariables(A);
 end
 
+%Lista
 function InitVariables(A)
     % variables leidas
     global DT SIGMA0 NINTERM NTOT OUTPUTDIR INNERBOUNDARY LABELADVECTION;
@@ -307,10 +435,12 @@ function InitVariables(A)
       fprintf('new output %s',OUTPUTDIR);
   end
   
+
   %if (*(OUTPUTDIR+strlen(OUTPUTDIR)-1) != '/')
   %  strcat (OUTPUTDIR, "/");   
 end
 
+%Lista
 function TellEverything()
     global RMIN RMAX ASPECTRATIO G SIGMA0 SIGMASLOPE NRAD NSEC NINTERM DT;
     global Adiabatic LABELADVECTION NTOT;
@@ -385,18 +515,21 @@ function TellEverything()
     
 end
 
+%Lista
 function z = TellNbOrbits(temp)
     global G;
     z = temp/2.0/pi*sqrt(G*1.0/1.0/1.0);
 end
 
+%Lista
 function z = TellNbOutputs(temp)
     global DT NINTERM;
     z = temp/DT/NINTERM;
 end
 
-function mdcp = CircumPlanetaryMass(gas_density, system)
-    global CellAbscissa CellOrdinate Surf HillRadius NRAD NSEC mdcp;
+%casi
+function mdcp = CircumPlanetaryMass(gas_density)
+    global CellAbscissa CellOrdinate Surf HillRadius NRAD NSEC system;
     
     xpl = system{3,1}(1);
     ypl = system{4,1}(1);
@@ -413,14 +546,16 @@ function mdcp = CircumPlanetaryMass(gas_density, system)
     end    
 end
 
+%casi
 function MultiplyPolarGridbyConstant(gas_density)
     global NRAD NSEC ScalingFactor;  
     gas_density_by_constant = zeros([NRAD+1,NSEC]);
-    gas_density_by_constant(1:NRAD,:) = gas_density.*ScalingFactor;
+    gas_density_by_constant = gas_density.*ScalingFactor;
 end
 
-function WriteBigPlanetSystemFile(system, TimeStep)
-    global Xplanet Yplanet VXplanet VYplanet MplanetVirtual;
+%Lista
+function WriteBigPlanetSystemFile(TimeStep)
+    global Xplanet Yplanet VXplanet VYplanet MplanetVirtual system;
     num_planet = system{1,1};
     Xplanet = system{3,1}(1);
     Yplanet = system{4,1}(1);
@@ -431,10 +566,435 @@ function WriteBigPlanetSystemFile(system, TimeStep)
     
 end
 
+%Lista
 function WriteBigPlanetFile(TimeStep,num_planet)
     global OmegaFrame Xplanet Yplanet VXplanet VYplanet MplanetVirtual mdcp PhysicalTime;
     currentFile = sprintf('Escritorio/Prototipo/bigplanet%d.dat',num_planet);   
     fileID = fopen(currentFile,'At');
     fprintf(fileID,'%d\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\t%#.18g\n', TimeStep, Xplanet, Yplanet, VXplanet, VYplanet, MplanetVirtual, 0, PhysicalTime, OmegaFrame, mdcp, 0);
     fclose(fileID);
+end
+
+
+function [gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label] = ...
+    AlgoGas(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label)
+    global DT Corotating MARK GET OmegaFrame PhysicalTime MASSTAPER MassTaper;
+    global vradnew vthetanew NRAD;
+    %GasTimeStepCFL = 1.0;
+    dtemp = 0.0;
+
+    while (dtemp < 0.999999999*DT)
+        MassTaper = PhysicalTime/(MASSTAPER*2.0*pi);
+        if (MassTaper > 1.0)
+            MassTaper = 1.0;
+        else
+            MassTaper = (sin(MassTaper*pi/2.0))^2.0;
+        end
+        
+        gastimestepcfl = ConditionCFL (gas_v_rad, gas_v_theta, DT-dtemp);
+        dt = (DT-dtemp)/double(gastimestepcfl);
+        dtemp = dtemp + dt;        
+    
+        if (strcmp(Corotating, 'YES'))
+            GetsPsysInfo(MARK);
+        end
+ 
+        FillForcesArrays();
+        AdvanceSystemRK5(dt);
+        OmegaNew = GetsPsysInfo(GET) / dt;
+        domega = OmegaNew - OmegaFrame;
+        gas_v_theta = CorrectVtheta (gas_v_theta, domega);
+        OmegaFrame = OmegaNew;
+        
+        RotatePsys(OmegaFrame*dt);
+        ComputePressureField(gas_density, gas_energy);
+        substep1(gas_v_rad, gas_v_theta, gas_density, dt);
+        substep2(gas_density, dt);
+        
+        gas_v_rad(2:NRAD,:) = vradnew(2:NRAD,:);
+        gas_v_theta(1:NRAD,:) = vthetanew(1:NRAD, :);
+        
+        [gas_density, gas_v_theta] = transport(gas_v_rad, gas_v_theta, gas_density, dt);
+        fprintf('.');
+        PhysicalTime = PhysicalTime + dt;
+        %return
+    end
+    fprintf('\n'); 
+end
+
+%lista
+function ComputePressureField(gas_density, gas_energy)
+    global ADIABATICINDEX Adiabatic SoundSpeed Pressure NRAD;    
+    if (strcmp(Adiabatic,'NO'))
+        Pressure(1:NRAD,:) = gas_density(1:NRAD,:).*SoundSpeed(1:NRAD,:).*SoundSpeed(1:NRAD,:);
+    else
+        Pressure(1:NRAD,:) = (ADIABATICINDEX-1.0).*gas_energy(1:NRAD,:);
+    end
+end
+
+%Lista
+function RotatePsys (angle)
+    global system;
+    
+    xt = system{3,1}(1);
+    yt = system{4,1}(1);
+    
+    system{3,1}(1) = xt*cos(angle) + yt*sin(angle);
+    system{4,1}(1) = -xt*sin(angle) + yt*cos(angle);
+    
+    xt = system{5,1}(1);
+    yt = system{6,1}(1);
+    
+    system{5,1}(1) = xt*cos(angle) + yt*sin(angle);
+    system{6,1}(1) = -xt*sin(angle) + yt*cos(angle);
+end
+
+
+function gastimestepcfl = ConditionCFL (gas_v_rad, gas_v_theta, deltaT)
+    global Rsup Rinf Rmed NSEC NRAD FastTransport SoundSpeed CVNR;
+    global CFLSECURITY InvRmed invdt1 invdt2 invdt3 invdt4;
+    global dvt dvr Vresidual;
+    
+    sum_gas_vtheta = sum(gas_v_theta, 2);
+    Vmoy(1:NRAD) = sum_gas_vtheta(1:NRAD)/double(NSEC);
+    
+    dxrad2(2:NRAD) = Rsup(2:NRAD) - Rinf(2:NRAD);
+    dxtheta2(2:NRAD) = Rmed(2:NRAD).*2.0*pi/double(NSEC);
+
+    if (strcmp(FastTransport, 'YES'))       
+        Vrestemp = bsxfun(@minus, gas_v_theta(2:NRAD,:), Vmoy(2:NRAD)');
+        Vresidual(1:NRAD-1,:) = Vrestemp(1:NRAD-1,:);      
+    else
+        Vresidual(1:NRAD-1,:) = gas_v_theta(2:NRAD,:);
+        
+    end
+    
+    tempdt1 = bsxfun(@rdivide, SoundSpeed(2:NRAD,:), (min(dxrad2(2:NRAD),dxtheta2(2:NRAD)))');
+    invdt1(2:NRAD, :) = tempdt1(1:NRAD-1, :);
+    tempdt2 = bsxfun(@rdivide, abs(gas_v_rad(2:NRAD,:)), dxrad2(2:NRAD)');
+    invdt2(2:NRAD, :) = tempdt2(1:NRAD-1, :);
+    
+    tempdt3 = bsxfun(@rdivide, abs(Vresidual(1:NRAD-1,:)), dxtheta2(2:NRAD)');
+    invdt3(2:NRAD, :) = tempdt3(1:NRAD-1,:);
+    
+    dvr(2:NRAD,:) = gas_v_rad(3:NRAD+1, :) - gas_v_rad(2:NRAD,:);
+    dvt(2:NRAD,:) = gas_v_theta(2:NRAD, mod(1:NSEC, NSEC)+1) - gas_v_theta(2:NRAD, :);
+    
+    %{
+    for i=2:NRAD
+        invdt1(i,:) = SoundSpeed(i, :)/min(dxrad2(i), dxtheta2(i));
+        invdt2(i,:) = abs(gas_v_rad(i,:))./dxrad2(i);
+        invdt3(i,:) = abs(Vresidual(i-1,:))./dxtheta2(i);
+       
+        dvr(i,:) = gas_v_rad(i+1,:) - gas_v_rad(i,:);
+        dvt(i,1:NSEC-1) = gas_v_theta(i, 2:NSEC) - gas_v_theta(i,1:NSEC-1);
+        dvt(i, NSEC) = gas_v_theta(i, 1) - gas_v_theta(i, NSEC);
+    end
+    %}
+    
+    I = find(dvr >= 0.0);
+    temp = dvr(:);
+    temp(I) = 1e-10;
+    dvr = reshape(temp, NRAD, NSEC);
+    
+    
+    I = find(dvr < 0.0);
+    temp = dvr(:);
+    temp(I) = -temp(I);
+    dvr = reshape(temp, NRAD, NSEC);
+    
+    I = find(dvt >= 0.0);
+    temp = dvt(:);
+    temp(I) = 1e-10;
+    dvt = reshape(temp, NRAD, NSEC);
+    
+    I = find(dvt < 0.0);
+    temp = dvt(:);
+    temp(I) = -temp(I);
+    dvt = reshape(temp, NRAD, NSEC);
+    
+    maxdvr = bsxfun(@rdivide, dvr(2:NRAD, :), dxrad2(2:NRAD)');
+    maxdvt = bsxfun(@rdivide, dvt(2:NRAD, :), dxtheta2(2:NRAD)');
+    
+    invdt4(2:NRAD,:) = max(maxdvr, maxdvt)*4.0*CVNR*CVNR;
+     
+    %{
+    for i=2:NRAD
+        invdt4(i,:) = max(dvr(i,:)./dxrad2(i), dvt(i,:)./dxtheta2(i))*4.0*CVNR*CVNR;
+    end
+    %}
+    
+    dt = CFLSECURITY./sqrt(invdt1.*invdt1+invdt2.*invdt2+invdt3.*invdt3+invdt4.*invdt4);
+    newdt = min(min(dt));
+    
+    dt2(1:NRAD-1) = 2.0*pi*CFLSECURITY/double(NSEC)./abs(Vmoy(1:NRAD-1).*InvRmed(1:NRAD-1)-Vmoy(2:NRAD).*InvRmed(2:NRAD));
+    
+    newdt2 = min(min(dt2));
+    
+    if (newdt2 < newdt)
+        newdt = newdt2;
+    end
+    
+   if (deltaT < newdt)
+       newdt = deltaT;
+   end
+    
+   gastimestepcfl = int64(ceil(deltaT/newdt));
+end
+
+%lista
+function binFile (vector, name)
+    path = strcat('Escritorio/output/', name, '.raw');
+    fileID = fopen(path,'w');
+    fwrite(fileID, vector', 'double');
+    fclose(fileID);
+end
+ 
+%lista
+function p = GetsPsysInfo(action)
+    global G GuidingCenter system Xplanet Yplanet;
+
+    x = system{3,1}(1);
+    xc = x;
+    y = system{4,1}(1);
+    yc = y;
+    vx = system{5,1}(1);
+    vxc = vx;
+    vy = system{6,1}(1);
+    vyc = vy;
+    m = system{2,1}(1)+1;    
+    h = x*vy-y*vx;
+    d = sqrt(x*x+y*y);
+    Ax = x*vy*vy-y*vx*vy-G*m*x/d;
+    Ay = y*vx*vx-x*vx*vy-G*m*y/d;
+    e = sqrt(Ax*Ax+Ay*Ay)/m;
+    a = h*h/G/m/(1.-e*e);    
+    
+    if (e == 0.0)
+        arg = 1.0;
+    else
+        arg = (1.0-d/a)/e;
+    end
+    
+    if (abs(arg) >= 1.0)
+        E = pi *(1.-arg/abs(arg))/2.;
+    else
+        E = acos((1.0-d/a)/e);
+    end    
+    
+    if ((x*y*(vy*vy-vx*vx)+vx*vy*(x*x-y*y)) < 0) 
+        E= -E;
+    end
+    
+    M = E-e*sin(E);
+    omega = sqrt(m/a/a/a);
+    PerihelionPA=atan2(Ay,Ax);
+    if (strcmp(GuidingCenter,'YES')) % true or false 
+        xc = a*cos(M+PerihelionPA);
+        yc = a*sin(M+PerihelionPA);
+        vxc = -a*omega*sin(M+PerihelionPA);
+        vyc =  a*omega*cos(M+PerihelionPA);
+    end
+    
+    if (e < 1e-8) 
+        xc = x;
+        yc = y;
+        vxc = vx;
+        vyc = vy;
+    end    
+    
+    switch action
+        case 1
+            Xplanet = xc;
+            Yplanet = yc;
+            p = 0.0;
+
+        case 0
+            x = xc;
+            y = yc;
+            vx = vxc;
+            vy = vyc;
+
+            d2 = sqrt(x*x+y*y);
+            d1 = sqrt(Xplanet*Xplanet+Yplanet*Yplanet);
+            cross = Xplanet*y-x*Yplanet;
+            Xplanet = x;
+            Yplanet = y;
+            p = asin(cross/(d1*d2)); 
+ 
+        case 2
+            p = omega;
+    end  
+end
+
+%lista
+function FillForcesArrays()
+    global system MassTaper RocheSmoothing NSEC Rmed G Potential;
+    
+    % Gravitational potential from planet on gas -- */
+    for k=1:system{1,1}
+        xplanet = system{3,1}(k);
+        yplanet = system{4,1}(k);
+        mplanet = system{2,1}(k) * MassTaper;
+        PlanetDistance = sqrt(xplanet*xplanet+yplanet*yplanet);
+        InvPlanetDistance3 =  1.0/PlanetDistance/PlanetDistance/PlanetDistance;
+        RRoche = PlanetDistance*(1.0/3.0*mplanet)^(1.0/3.0);
+        
+        if (strcmp(RocheSmoothing, 'YES'))
+          smoothing = RRoche*ROCHESMOOTHING;
+        else
+          smoothing = compute_smoothing(PlanetDistance);
+        end
+        
+        x = Rmed'*cos((0:NSEC-1)/NSEC*2.0*pi);
+        y = Rmed'*sin((0:NSEC-1)/NSEC*2.0*pi);
+        
+        distancesmooth = sqrt((x-xplanet).*(x-xplanet)+(y-yplanet).*(y-yplanet) +smoothing^2);
+        
+        pot = -G*mplanet./distancesmooth + G*mplanet*InvPlanetDistance3*(x.*xplanet+y.*yplanet);
+        pot2 = -G*1.0./Rmed;
+        
+        Potential = bsxfun(@plus, pot, pot2');
+
+        %{
+        for i=1:NRAD
+            x = Rmed(i).*cos(angle);
+            y = Rmed(i).*sin(angle);
+            %if (i == 64)
+            %    [Rmed(i) angle(1) x(1) y(1)]
+            %end
+            %size(x)
+            distance = (x-xplanet).*(x-xplanet)+(y-yplanet).*(y-yplanet);
+            distancesmooth = sqrt(distance+smooth);
+            pot = -G*mplanet./distancesmooth; % Direct term from planet 
+            
+            if (strcmp(INDIRECTTERM,'YES'))
+                pot = pot + G*mplanet*InvPlanetDistance3*(x.*xplanet+y.*yplanet); % Indirect term from planet  
+            end
+            
+            pot2 = -G*1.0./Rmed(i);
+            Potential(i,:)= pot + pot2;
+            %Potential
+        end
+        
+        %}
+    end
+    
+
+end
+
+%lista
+function smooth = compute_smoothing(r)
+    global THICKNESSSMOOTHING FLARINGINDEX;
+    smooth = THICKNESSSMOOTHING * AspectRatio(r) * r^(1.0+FLARINGINDEX);
+end
+
+%lista
+function aspectratio = AspectRatio(rad)
+    global ASPECTRATIO PhysicalTime TRANSITIONRADIUS TRANSITIONWIDTH TRANSITIONRATIO;
+    global LAMBDADOUBLING PhysicalTimeInitial;
+    
+    aspectratio = ASPECTRATIO;
+    rmin = TRANSITIONRADIUS-TRANSITIONWIDTH*ASPECTRATIO;
+    rmax = TRANSITIONRADIUS+TRANSITIONWIDTH*ASPECTRATIO;
+    scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
+    rmin = rmin * scale;
+    rmax = rmax * scale;
+    if (rad < rmin) 
+        aspectratio = aspectratio * TRANSITIONRATIO;
+    end
+    
+    if ((rad >= rmin) & (rad <= rmax))
+        aspectratio = aspectratio *exp((rmax-rad)/(rmax-rmin)*log(TRANSITIONRATIO));
+    end  
+end
+
+%lista
+function AdvanceSystemRK5(dt)
+    global system FORCEDCIRCULAR q0 PlanetMasses;
+    n = 1; %numero de planetas
+    
+    if (strcmp(FORCEDCIRCULAR, 'NO'))
+        q0(1) = system{3,1}(1);
+        q0(2) = system{4,1}(1);
+        q0(3) = system{5,1}(1);
+        q0(4) = system{6,1}(1);
+        PlanetMasses(1) = system{2,1}(1);
+        feelothers = system{10,1}(1);
+
+        q1 = RungeKutta(q0, dt, PlanetMasses, n, feelothers);
+    end
+    
+    %q1
+    for i=1:n
+        system{3,1}(i) = q1(i) ;
+        system{4,1}(i) = q1(i+n);
+        system{5,1}(i) = q1(i+2*n);
+        system{6,1}(i) = q1(i+3*n);
+    end
+end
+
+%Lista
+function q1 = RungeKutta (q0, dt, masses, n, feelothers)
+    global k1 k2 k3 k4 k5 k6;
+
+    k1 = DerivMotionRK5 (q0, masses, n, dt, feelothers);
+    qnew = TranslatePlanetRK5 (q0, 0.2, 0.0, 0.0, 0.0, 0.0, n);
+   
+    k2 = DerivMotionRK5 (qnew, masses, n, dt, feelothers);
+    qnew = TranslatePlanetRK5 (q0, 0.075, 0.225, 0.0, 0.0, 0.0, n);
+    
+    k3 = DerivMotionRK5 (qnew, masses, n, dt, feelothers);
+    qnew = TranslatePlanetRK5 (q0, 0.3, -0.9, 1.2, 0.0, 0.0, n);
+    
+    k4 = DerivMotionRK5 (qnew, masses, n, dt, feelothers);
+    qnew = TranslatePlanetRK5 (q0, -11.0/54.0, 2.5, -70.0/27.0, 35.0/27.0, 0.0, n);
+    
+    k5 = DerivMotionRK5 (qnew, masses, n, dt, feelothers);
+    qnew = TranslatePlanetRK5 (q0, 1631.0/55296.0, 175.0/512.0, 575.0/13824.0, 44275.0/110592.0, 253.0/4096.0, n);
+    
+    k6 = DerivMotionRK5 (qnew, masses, n, dt, feelothers);
+    
+    q1 = q0+37.0/378.0.*k1+250.0/621.0.*k3+125.0/594.0.*k4+512.0/1771.0.*k6;
+    
+end
+
+%lista
+function deriv = DerivMotionRK5(q_init, masses, n, dt, feelothers)
+    global G INDIRECTTERM;
+    Dist = sqrt(q_init(1).*q_init(1)+q_init(2).*q_init(2));
+    
+    %{
+    q_init(1) = x
+    q_init(2) = y
+    deriv(1) = derivx
+    deriv(2) = derivy
+    deriv(3) = derivvx
+    deriv(4) = derivvy
+    %}
+    
+    deriv(1) = q_init(3); 
+    deriv(2) = q_init(4);
+    deriv(3) = -G*1.0/Dist/Dist/Dist*q_init(1);
+    deriv(4) = -G*1.0/Dist/Dist/Dist*q_init(2);
+ 
+    if (strcmp(INDIRECTTERM,'YES'))
+        deriv(3) = deriv(3) -G*masses/Dist/Dist/Dist*q_init(1);
+        deriv(4) = deriv(4) -G*masses/Dist/Dist/Dist*q_init(2);
+    end
+    deriv = deriv*dt;
+end
+
+%lista
+function qnew = TranslatePlanetRK5 (qold, c1, c2, c3, c4, c5, n)
+    global k1 k2 k3 k4 k5;
+    
+    qnew = qold+c1.*k1+c2.*k2+c3.*k3+c4.*k4+c5.*k5;
+end
+
+%lista
+function gas_v_theta = CorrectVtheta (gas_v_theta, domega)
+    global Rmed NRAD;
+
+    gas_v_theta(1:NRAD,:) = bsxfun(@minus, gas_v_theta(1:NRAD,:),domega.*Rmed(1:NRAD)');
 end

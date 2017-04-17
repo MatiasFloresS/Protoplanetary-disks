@@ -1,19 +1,20 @@
-function Initialization(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label, system)
-    global RESTART;
+function [gas_v_rad, gas_v_theta, gas_label] =Initialization(gas_density, gas_v_rad, gas_v_theta, gas_energy, gas_label)
+    global RESTART system;
     %ReadPrevDim() Esta funcion leera dims.dat y used_rad.dat, mas adelante
     %se vera eso
     
-    InitEuler(gas_v_rad, gas_v_theta, gas_density, gas_energy);
-    InitLabel(gas_label, system);
-    
+    [gas_v_rad, gas_v_theta] = InitEuler(gas_v_rad, gas_v_theta, gas_density, gas_energy);
+    gas_label = InitLabel(gas_label);
+
     if (RESTART == 1)
        % checkrebin and others functions 
     end
-    WriteDim();    
+    %WriteDim();   
+    %initPotential();
 end
 
-function InitEuler(Vr, Vt, gas_density, gas_energy)
-    global NRAD NSEC SoundSpeed Pressure Temperature;
+function [gas_v_rad, gas_v_theta] = InitEuler(gas_v_rad, gas_v_theta, gas_density, gas_energy)
+    global NRAD NSEC SoundSpeed Pressure Temperature Potential;
     %InitTransport()
     %RadMomP         = zeros([NRAD,NSEC]);
     %RadMomM         = zeros([NRAD,NSEC]);
@@ -46,40 +47,46 @@ function InitEuler(Vr, Vt, gas_density, gas_energy)
     %EnergyNew    = zeros([NRAD,NSEC]);
     %EnergyInt    = zeros([NRAD,NSEC]);
     %TemperInt    = zeros([NRAD,NSEC]);
-    %Potential    = zeros([NRAD,NSEC]);
-    Pressure     = zeros([NRAD,NSEC]);
-    SoundSpeed   = zeros([NRAD,NSEC]);
-    Temperature  = zeros([NRAD,NSEC]);
+    Potential    = zeros([NRAD+1,NSEC]);
+    Pressure     = zeros([NRAD+1,NSEC]);
+    SoundSpeed   = zeros([NRAD+1,NSEC]);
+    Temperature  = zeros([NRAD+1,NSEC]);
     %Qplus        = zeros([NRAD,NSEC]);
-    
     InitComputeAccel();
     ComputeSoundSpeed(gas_density, gas_energy);
     ComputePressureField(gas_density, gas_energy);
     ComputeTemperatureField(gas_density, gas_energy);
-    InitGasVelocities (Vr, Vt) 
+    [gas_v_rad, gas_v_theta] = InitGasVelocities (gas_v_rad, gas_v_theta);
 end
 
 function InitComputeAccel()
     global CellAbscissa CellOrdinate NRAD NSEC Rmed;
-   
-    CellAbscissa = zeros([NRAD,NSEC]);
-    CellOrdinate = zeros([NRAD,NSEC]);
     
-    for i=1:NRAD
-        CellAbscissa(i,:) = Rmed(i).* cos(2.0*pi*(0:NSEC-1)/NSEC);
-        CellOrdinate(i,:) = Rmed(i).* sin(2.0*pi*(0:NSEC-1)/NSEC);
-    end
+    %for j=1:NSEC
+    %    CellAbscissa(1:NRAD,j) = Rmed.* cos(2.0*pi*(j-1)/NSEC);
+    %    CellOrdinate(1:NRAD,j) = Rmed.* sin(2.0*pi*(j-1)/NSEC);
+    %end
+    CellAbscissa = Rmed'* cos(2.0*pi*(0:NSEC-1)/NSEC);
+    CellOrdinate = Rmed'* sin(2.0*pi*(0:NSEC-1)/NSEC);
+    CellAbscissa(NRAD+1,:) = 0.0;
+    CellOrdinate(NRAD+1,:) = 0.0;
+    
 end
 
 function ComputeSoundSpeed(gas_density, gas_energy)
-    global Rmed FLARINGINDEX G NSEC Adiabatic SoundSpeed ADIABATICINDEX; 
-    if (~Adiabatic)
+    global Rmed NSEC FLARINGINDEX G Adiabatic SoundSpeed ADIABATICINDEX NRAD; 
+    
+    aspectratio = zeros([1,NRAD]);
+    aspectratio(1:NRAD) = AspectRatio(Rmed);
+
+    if (strcmp(Adiabatic,'NO'))        
         for j=1:NSEC
-            SoundSpeed(:,j) = AspectRatio(Rmed).*sqrt(G*1.0./Rmed).*Rmed.^FLARINGINDEX;
+            SoundSpeed(1:NRAD,j) = aspectratio.*sqrt(G*1.0./Rmed).*(Rmed.^FLARINGINDEX);
         end    
     else
-       SoundSpeed = sqrt(ADIABATICINDEX*(ADIABATICINDEX-1.0).*gas_energy./gas_density);
-    end
+       SoundSpeed = sqrt(ADIABATICINDEX*(ADIABATICINDEX-1.0).*gas_energy(1:NRAD)./gas_density(1:NRAD));
+    end    
+
 end
 
 function aspectratio = AspectRatio(rad)
@@ -92,36 +99,35 @@ function aspectratio = AspectRatio(rad)
     scale = 1.0+(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
     rmin = rmin * scale;
     rmax = rmax * scale;
-    
     if (rad < rmin) 
         aspectratio = aspectratio * TRANSITIONRATIO;
     end
     
-    if (rad >= rmin && rad <= rmax)
+    if ((rad >= rmin) & (rad <= rmax))
         aspectratio = aspectratio *exp((rmax-rad)/(rmax-rmin)*log(TRANSITIONRATIO));
     end  
 end
 
 function ComputePressureField(gas_density, gas_energy)
-    global ADIABATICINDEX Adiabatic SoundSpeed Pressure;    
-    if (~Adiabatic)
-        Pressure = gas_density.*SoundSpeed.*SoundSpeed;
+    global ADIABATICINDEX Adiabatic SoundSpeed Pressure NRAD;    
+    if (strcmp(Adiabatic,'NO'))
+        Pressure(1:NRAD,:) = gas_density(1:NRAD,:).*SoundSpeed(1:NRAD,:).*SoundSpeed(1:NRAD,:);
     else
-        Pressure = (ADIABATICINDEX-1.0).*gas_energy;
+        Pressure(1:NRAD,:) = (ADIABATICINDEX-1.0).*gas_energy(1:NRAD,:);
     end
 end
 
 function ComputeTemperatureField(gas_density, gas_energy)
-    global Temperature Adiabatic MU R ADIABATICINDEX Pressure;
-    if (~Adiabatic)
-        Temperature = MU/R.*Pressure./gas_density;
+    global Temperature Adiabatic MU R ADIABATICINDEX Pressure NRAD;
+    if (strcmp(Adiabatic,'NO'))
+        Temperature(1:NRAD,:) = MU/R.*Pressure(1:NRAD,:)./gas_density(1:NRAD,:);
     else
-        Temperature = MU/R*(ADIABATICINDEX-1.0).*gas_energy./gas_density;
+        Temperature(1:NRAD,:) = MU/R*(ADIABATICINDEX-1.0).*gas_energy(1:NRAD,:)./gas_density(1:NRAD,:);
     end
 end
 
-function InitLabel(gas_label,system)
-    global NSEC NRAD Rmed;
+function gas_label = InitLabel(gas_label)
+    global NSEC NRAD Rmed system;
     
     x = zeros([NRAD,NSEC]);
     y = zeros([NRAD,NSEC]);
@@ -150,11 +156,55 @@ end
 
 function WriteDim()
     global RMAX NTOT NINTERM NRAD NSEC
-    fileID = fopen('Escritorio/Prototipo/dims.dat','w');
+    fileID = fopen('dims.dat','w');
     fprintf(fileID,'%d\t%d\t\t%d\t%d\t%f\t%d\t%d\t%d\n',0,0,0,0,RMAX, int16(NTOT/NINTERM), NRAD, NSEC);
     fclose(fileID);
 end
 
-function InitGasVelocities(~,~)
-    % do nothing atm
+function [gas_v_rad, gas_v_theta] = InitGasVelocities(gas_v_rad, gas_v_theta)
+    global NRAD Rmed Rinf G SELFGRAVITY NSEC ASPECTRATIO FLARINGINDEX SIGMASLOPE OmegaFrame;
+    global IMPOSEDDISKDRIFT SIGMA0 SigmaInf;
+    
+    r = Rmed(1:NRAD);
+    ri = Rinf(1:NRAD);
+    r(NRAD+1) = Rmed(NRAD);
+    ri(NRAD+1) = Rinf(NRAD);
+    
+    viscosity(1:NRAD+1) = Fviscosity(r);
+    
+    if (strcmp(SELFGRAVITY,'NO'))  
+      omega = sqrt(G*1.0./r./r./r);
+      for j=1:NSEC
+        gas_v_theta(:,j) = omega.*r.*sqrt(1.0-(ASPECTRATIO.^2.0).*r.^(2.0*FLARINGINDEX)*(1.0+SIGMASLOPE-2.0*FLARINGINDEX)) - r*OmegaFrame;
+      end   
+    end
+    
+    gas_v_rad(NRAD+1,:) = 0.0;
+    
+    for j=1:NSEC
+        gas_v_rad(1:NRAD, j) = IMPOSEDDISKDRIFT*SIGMA0./SigmaInf(1:NRAD)./ri(1:NRAD) - 3.0.*viscosity(1:NRAD)./r(1:NRAD).*(-SIGMASLOPE+0.5);
+    end
+    
+    gas_v_rad(1,:) = 0.0;
+    
+end
+
+function viscosity = Fviscosity(rad)
+    global VISCOSITY CAVITYRADIUS CAVITYWIDTH ASPECTRATIO LAMBDADOUBLING PhysicalTime;
+    global PhysicalTimeInitial CAVITYRATIO;
+    
+    viscosity = VISCOSITY;
+    
+    rmin = CAVITYRADIUS-CAVITYWIDTH*ASPECTRATIO;
+    rmax = CAVITYRADIUS+CAVITYWIDTH*ASPECTRATIO;
+    scale = 1.0 +(PhysicalTime-PhysicalTimeInitial)*LAMBDADOUBLING;
+    rmin = rmin*scale;
+    rmax = rmax*scale;
+    
+    if (rad < rmin) 
+        viscosity = viscosity * CAVITYRATIO;
+    end
+    if ((rad >= rmin) & (rad <= rmax))
+        viscosity = viscosity * exp((rmax-rad)/(rmax-rmin)*log(CAVITYRATIO));   
+    end
 end

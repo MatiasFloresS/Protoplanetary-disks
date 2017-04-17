@@ -1,6 +1,5 @@
-function FillEnergy()
-    global Rmed EnergyMed;    
-    EnergyMed = Energy(Rmed);
+function a = FillEnergy(Rmed)   
+    a = Energy(Rmed);
 end
 
 function w = Energy(r)

@@ -31,22 +31,22 @@ function cant_planets = FindNumberOfPlanets()
 end
 
 function AllocPlanetsSystem (cant_planets)
-    global system ;
+    global system;
     system = cell(10,1);
     system{10,1} = [];
 
-    % {
-    %  int nb;
-    %  real *mass;
-    %  real *x;
-    %  real *y;
-    %  real *vx;
-    %  real *vy;
-    %  real *acc;
-    %  char **name; no se ocupa, asi que se le da espacio de un array de 1x3
-    %  boolean *FeelDisk;
-    %  boolean *FeelOthers;
-    %  }
+    %{
+      int nb;
+      real *mass;
+      real *x;
+      real *y;
+      real *vx;
+      real *vy;
+      real *acc;
+      char **name; no se ocupa, asi que se le da espacio de un array de 1x3
+      boolean *FeelDisk;
+      boolean *FeelOthers;
+    %}
 
     cero = zeros(1,cant_planets);
     cero2 = zeros(1);
@@ -113,8 +113,9 @@ function information_planets(cant_planets)
                 
                 system{3,1}(num_planet) = real(dist)*(1.0+ECCENTRICITY);
                 system{4,1}(num_planet) = 0.0;
-                system{6,1}(num_planet) = real(sqrt(G*(1.0+mass)/dist))* sqrt((1.0-ECCENTRICITY)/(1.0+ECCENTRICITY));
+                system{6,1}(num_planet) = sqrt(G*(1.0 +mass)/dist)* sqrt((1.0-ECCENTRICITY)/(1.0+ECCENTRICITY));
                 system{5,1}(num_planet) = system{6,1}(num_planet)* -0.0000000001;
+
                 cant_planets = cant_planets - 1;
                 num_planet = num_planet + 1;
             end

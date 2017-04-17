@@ -1,4 +1,5 @@
-function ListPlanets (system)
+function ListPlanets ()
+    global system;
     for i=1:system{1}
         fprintf('Planet number %d\n', i)
         fprintf('---------------\n')
